@@ -36,5 +36,5 @@ Add fake money to IRC channel, with a bank to track each users' funds
 ### Mine
 * Every so often (random amount of time between 30 minutes and 3 hours) the mine is refreshed
 * Refresh selects a random "richness" between 0.1 and 10 (normal distribution centered on 1)
-* On a mine command, yield (time since user last mine / 30 minutes) * richness
+* On a mine command, yield (#30 minute blocks since last mine/48, max 1.0) * richness
 * Richness is not available to user, nor last user mine time
