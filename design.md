@@ -18,7 +18,7 @@ Add fake money to IRC channel, with a bank to track each users' funds
 ## Mechanics
 
 ### Slots
-* Performs 3x random picks of a set of slot results and yields money based on the bet and the resul
+* Performs 3x random picks of a set of slot results and yields money based on the bet and the result
 * Images include some utf-8 characters, like 🍒, $, 7, 🔔, 🍋
 * If bar in any slot but bar not in every slot, lose
 * If bar in every slot, payout 2x
