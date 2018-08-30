@@ -2,6 +2,7 @@ package org.duh102.duhbot.moolah;
 
 import java.util.*;
 
+import org.pircbotx.User;
 import org.pircbotx.hooks.*;
 import org.pircbotx.hooks.events.*;
 
@@ -20,10 +21,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
   public String getUserReg (User user) {
 		try {
 			user.send().whoisDetail();
-			WaitForQueue waitForQueue = new WaitForQueue(getBot());
+			WaitForQueue waitForQueue = new WaitForQueue(user.getBot());
 			while (true) {
 				WhoisEvent event = waitForQueue.waitFor(WhoisEvent.class);
-				if (!event.getNick().equals(getNick()))
+				if (!event.getRegisteredAs().equals(user.getNick()))
 					continue;
 
 				//Got our event
@@ -33,14 +34,15 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 		} catch (InterruptedException ex) {
 			(new RuntimeException("Couldn't finish querying user for verified status", ex)).printStackTrace();
 		} 
+    return null;
   }
 
   public void replyBalance(MessageEvent event, long balance, byte fractional) {
-    event.reply(String.format("You have $%,d.%02d", balance, fractional));
+    event.respond(String.format("You have $%,d.%02d", balance, fractional));
   }
 
   public void noAccountMessage(MessageEvent event, User user) {
-    event.reply("You don't have a registered bank account!");
+    event.respond("You don't have a registered bank account!");
   }
   
   public HashMap<String,String> getHelpFunctions() {

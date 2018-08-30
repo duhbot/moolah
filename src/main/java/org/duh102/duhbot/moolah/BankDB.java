@@ -1,5 +1,8 @@
 package org.duh102.duhbot.moolah;
 
+import java.sql.*;
+import java.util.*;
+
 public class BankDB {
   private static String dbfile = "moolah.db";
   private static BankDB instance;
