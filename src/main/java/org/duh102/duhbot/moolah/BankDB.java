@@ -2,23 +2,39 @@ package org.duh102.duhbot.moolah;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BankDB {
-  private static String dbfile = "moolah.db";
-  private static BankDB instance;
+  private static final String DEFAULT_DB = "moolah.db";
+  private static ConcurrentHashMap<String, BankDB> instanceMap;
+  private String myDBFile;
   static {
-    instance = new BankDB();
+    instanceMap = new ConcurrentHashMap<String, BankDB>();
   }
 
-  private BankDB(){
-    createTables();
+  private BankDB(String dbFile){
+    myDBFile = dbFile;
+    createTables(dbFile);
   }
 
-  public static BankDB getInstance(){
+  private static BankDB getInstance(String dbFile) {
+    BankDB instance = null;
+    instance = instanceMap.get(dbFile);
+    if( instance == null ) {
+      instance = new BankDB(dbFile);
+      instanceMap.put(dbFile, instance);
+    }
     return instance;
   }
 
-  public static void createTables()
+  public static BankDB getDBInstance() {
+    return getInstance(DEFAULT_DB);
+  }
+  public static BankDB getMemoryInstance() {
+    return getInstance(":memory:");
+  }
+
+  private void createTables()
   {
     Connection conn = getDBConnection();
     if(conn != null)
@@ -40,8 +56,8 @@ public class BankDB {
       }
     }
   }
-  
-  public static Connection getDBConnection()
+
+  public Connection getDBConnection()
   {
     Connection conn = null;
     try
@@ -54,7 +70,9 @@ public class BankDB {
       {
         cnfe.printStackTrace();
       }
-      conn = DriverManager.getConnection("jdbc:sqlite:" + dbfile);
+      SQLiteConfig config = new SQLiteConfig();
+      config.enforceForeignKeys(true);
+      conn = DriverManager.getConnection("jdbc:sqlite:" + myDBFile, config.toProperties());
     }
     catch(java.sql.SQLException sqle)
     {
