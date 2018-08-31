@@ -57,7 +57,7 @@ public class BankDB {
       stat.executeUpdate("CREATE TABLE IF NOT EXISTS slotOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, slotImages TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_TIMESTAMP)) );");
       stat.executeUpdate("CREATE TABLE IF NOT EXISTS hiLoOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, resultInt INTEGER NOT NULL, hiLo TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_TIMESTAMP)) );");
       stat.executeUpdate("CREATE TABLE IF NOT EXISTS mineOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, mineFractions INTEGER NOT NULL, richness REAL NOT NULL, yield INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_TIMESTAMP)) );");
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS transferRecord (outcomeid INTEGER PRIMARY KEY, uidSource INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, uidDest INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_TIMESTAMP)) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS transferRecord (outcomeid INTEGER PRIMARY KEY, uidSource INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, uidDest INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, amount INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_TIMESTAMP)) );");
     } catch(SQLException sqle) {
       throw new InvalidDBConfiguration(sqle);
     } finally {
@@ -111,16 +111,25 @@ public class BankDB {
         throw new AccountAlreadyExists(String.format("User %s registered as %d", user, account.uid));
 
       try {
-        PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user) VALUES (?);");
+        PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user) VALUES (?);", Statement.RETURN_GENERATED_KEYS);
         stat.setString(1, user);
         stat.executeUpdate();
+        ResultSet rs = stat.getGeneratedKeys();
+        if (rs.next()) {
+          long genUID = rs.getLong(1);
+          account = getAccount(conn, genUID);
+        }
+        else {
+          try {
+            account = getAccountExcept(conn, user);
+          } catch( AccountDoesNotExist adne ) {
+            throw new RecordFailure(adne);
+          }
+        }
+        rs.close();
+        return account;
       } catch( SQLException sqle ) {
         throw new RecordFailure(sqle);
-      }
-      try {
-        account = getAccountExcept(conn, user);
-      } catch( AccountDoesNotExist adne ) {
-        throw new RecordFailure(adne);
       }
     } finally {
       if( handleConn ) {
@@ -131,7 +140,6 @@ public class BankDB {
         }
       }
     }
-    return account;
   }
 
   public BankAccount getAccountExcept(String user) throws AccountDoesNotExist, RecordFailure {
@@ -167,6 +175,7 @@ public class BankDB {
             throw new RecordFailure(iba);
           }
         }
+        rs.close();
         return account;
       } catch( SQLException sqle ) {
         //may want to check for SQLITE_CONSTRAINT(19) here
@@ -216,11 +225,41 @@ public class BankDB {
             throw new RecordFailure(iba);
           }
         }
+        rs.close();
         return account;
       } catch( SQLException sqle ) {
         //may want to check for SQLITE_CONSTRAINT(19) here
         throw new RecordFailure(sqle);
       }
+    } finally {
+      if( handleConn ) {
+        try {
+          conn.close();
+        } catch( SQLException sqle ) {
+          throw new RecordFailure(sqle);
+        }
+      }
+    }
+  }
+
+  // Sync an account to the database
+  public BankAccount pushAccount(Connection conn, BankAccount account) throws RecordFailure, AccountDoesNotExist {
+    boolean handleConn = conn == null;
+    try {
+      if( handleConn )
+        conn = handleMakeConnection();
+      BankAccount dbAccount = getAccountExcept(conn, account.uid);
+      try {
+        PreparedStatement stat = conn.prepareStatement("UPDATE bankAccount SET user = ?, balance = ?, lastMined = ? WHERE uid = ?;");
+        stat.setString(1, account.user);
+        stat.setLong(2, account.balance);
+        stat.setLong(3, account.lastMined);
+        stat.setLong(4, account.uid);
+        stat.executeUpdate();
+      } catch( SQLException sqle ) {
+        throw new RecordFailure(sqle);
+      }
+      return account;
     } finally {
       if( handleConn ) {
         try {
@@ -238,7 +277,7 @@ public class BankDB {
       if( handleConn )
         conn = handleMakeConnection();
       try {
-        PreparedStatement stat = conn.prepareStatement("INSERT INTO slotOutcome (uid, slotImages, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?);");
+        PreparedStatement stat = conn.prepareStatement("INSERT INTO slotOutcome (uid, slotImages, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
         stat.setLong(1, uid);
         stat.setString(2, slotState);
         stat.setLong(3, wager);
@@ -267,7 +306,7 @@ public class BankDB {
       if( handleConn )
         conn = handleMakeConnection();
       try {
-        PreparedStatement stat = conn.prepareStatement("INSERT INTO hiLoOutcome (uid, resultInt, hiLo, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?, ?);");
+        PreparedStatement stat = conn.prepareStatement("INSERT INTO hiLoOutcome (uid, resultInt, hiLo, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
         stat.setLong(1, uid);
         stat.setInt(2, resultInt);
         stat.setString(3, hiLo);
@@ -291,13 +330,13 @@ public class BankDB {
     }
   }
 
-  public void recordMineOutcome(Connection conn, long uid, int mineFractions, double richness, long yield, long timestamp, boolean updateLastMined) throws RecordFailure {
+  public void recordMineOutcome(Connection conn, long uid, int mineFractions, double richness, long yield, long timestamp) throws RecordFailure {
     boolean handleConn = conn == null;
     try {
       if( handleConn )
         conn = handleMakeConnection();
       try {
-        PreparedStatement stat = conn.prepareStatement("INSERT INTO mineOutcome (uid, mineFractions, richness, yield, timestamp) values (?, ?, ?, ?, ?, ?, ?);");
+        PreparedStatement stat = conn.prepareStatement("INSERT INTO mineOutcome (uid, mineFractions, richness, yield, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
         stat.setLong(1, uid);
         stat.setInt(2, mineFractions);
         stat.setDouble(3, richness);
@@ -308,8 +347,6 @@ public class BankDB {
         //may want to check for SQLITE_CONSTRAINT(19) here
         throw new RecordFailure(sqle);
       }
-      //if( updateLastMined )
-      //  recordLastMined(conn, uid, timestamp);
     } finally {
       if( handleConn ) {
         try {
@@ -320,4 +357,32 @@ public class BankDB {
       }
     }
   }
+
+  public void recordTransfer(Connection conn, long uidSource, long uidDestination, long amount, long timestamp) throws RecordFailure {
+    boolean handleConn = conn == null;
+    try {
+      if( handleConn )
+        conn = handleMakeConnection();
+      try {
+        PreparedStatement stat = conn.prepareStatement("INSERT INTO transferRecord (uidSource, uidDest, amount, timestamp) values (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
+        stat.setLong(1, uidSource);
+        stat.setLong(2, uidDestination);
+        stat.setLong(3, amount);
+        stat.setLong(4, timestamp);
+        stat.executeUpdate();
+      } catch( SQLException sqle ) {
+        //may want to check for SQLITE_CONSTRAINT(19) here
+        throw new RecordFailure(sqle);
+      }
+    } finally {
+      if( handleConn ) {
+        try {
+          conn.close();
+        } catch( SQLException sqle ) {
+          throw new RecordFailure(sqle);
+        }
+      }
+    }
+  }
+
 }
