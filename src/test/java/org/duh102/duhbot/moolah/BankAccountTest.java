@@ -3,6 +3,7 @@ package org.duh102.duhbot.moolah;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
@@ -80,5 +81,34 @@ class BankAccountTest {
     assertThrows(ImproperBalanceAmount.class, () -> {
         a.subFunds(-1l);
     });
+  }
+
+  /*
+   * Object equality
+   */
+  @Test public void testEqualsYes() throws Exception {
+    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
+    BankAccount b = new BankAccount(0l, "test", 0l, 0l);
+    assertEquals(a, b, String.format("!( %d == %d && %d == %d && '%s' == '%s' && %d == %d )", a.uid, b.uid, a.balance, b.balance, a.user, b.user, a.lastMined, b.lastMined) );
+  }
+  @Test public void testEqualsNoUID() throws Exception {
+    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
+    BankAccount b = new BankAccount(1l, "test", 0l, 0l);
+    assertNotEquals(a, b);
+  }
+  @Test public void testEqualsNoUser() throws Exception {
+    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
+    BankAccount b = new BankAccount(0l, "test1", 0l, 0l);
+    assertNotEquals(a, b);
+  }
+  @Test public void testEqualsNoBalance() throws Exception {
+    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
+    BankAccount b = new BankAccount(0l, "test", 1l, 0l);
+    assertNotEquals(a, b);
+  }
+  @Test public void testEqualsNoLastMined() throws Exception {
+    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
+    BankAccount b = new BankAccount(0l, "test", 0l, 1l);
+    assertNotEquals(a, b);
   }
 }
