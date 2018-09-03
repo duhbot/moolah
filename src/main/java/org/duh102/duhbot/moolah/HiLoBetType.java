@@ -4,15 +4,25 @@ import java.util.Pattern;
 import java.util.Matcher;
 
 public enum HiLoBetType {
-  HIGH("high"), LOW("low"), EQUAL("equal");
+  HIGH("high", 2.0), LOW("low", 2.0), EQUAL("equal", 5.0);
   private String nicename;
+  private double multiplier;
   //Helpfully, our three choices have single character unique prefixes
   private static Pattern = Pattern.compile("^(h(i(gh?)?)?|l(ow?)?|e(q(u(al?)?)?)?)");
-  HiLoBetType(String nicename) {
+  HiLoBetType(String nicename, double multiplier) {
     this.nicename = nicename;
+    this.multiplier = multiplier;
   }
   public String toString() {
-    return this.nicename;
+    return nicename;
+  }
+  public double getMultiplier() {
+    return multiplier;
+  }
+  public boolean getSatisfied(int result, int mid) {
+    return (this.equals(HiLoBetType.EQUAL) && result == mid)
+      || (this.equals(HiLoBetType.HIGH) && result > mid)
+      || (this.equals(HiLoBetType.LOW) && result < mid);
   }
   public HiLoBetType fromString(String input) throws InvalidInputError {
     input = input.trim().toLowerCase();

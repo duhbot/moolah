@@ -1,8 +1,11 @@
 package org.duh102.duhbot.moolah;
 
 import java.sql.Timestamp;
+import java.util.Random;
 
 public class HiLoRecord {
+  private static final Random rand = new Random();
+  public static final int MIN = 0, MAX = 11, MID = (MAX + MIN / 2);
   public long outcomeID;
   public long uid;
   public int resultInt;
@@ -34,7 +37,8 @@ public class HiLoRecord {
       && this.multiplier == other.multiplier && this.timestamp.equals(other.timestamp);
   }
   public static HiLoRecord betHiLo(HiLoBetType hiLo, long wager) {
-    long timestamp = new Timestamp(System.currentTimeMillis());
-    
+    Timestamp timestamp = LocalTimestamp.currentTimestamp();
+    int result = rand.nextInt(MAX-MIN)+MIN;
+    double mult = hiLo.getSatisfied(result, MID)?hiLo.getMultiplier():0.0;
   }
 }
