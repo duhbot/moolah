@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public enum HiLoBetType {
-  HIGH("high", 2.0), LOW("low", 2.0), EQUAL("equal", 5.0);
+  HIGH("HIGH", 2.0), LOW("LOW", 2.0), EQUAL("EQUAL", 5.0);
   private String nicename;
   private double multiplier;
   private static Pattern typePat = Pattern.compile("^(h(i(gh?)?)?|l(ow?)?|e(q(u(al?)?)?)?)");
@@ -20,12 +20,12 @@ public enum HiLoBetType {
   public double getMultiplier() {
     return multiplier;
   }
-  public boolean getSatisfied(int result, int mid) {
-    return (this.equals(HiLoBetType.EQUAL) && result == mid)
-      || (this.equals(HiLoBetType.HIGH) && result > mid)
-      || (this.equals(HiLoBetType.LOW) && result < mid);
+  public boolean getSatisfied(int result) {
+    return (this.equals(HiLoBetType.EQUAL) && result == HiLoRecord.MID)
+      || (this.equals(HiLoBetType.HIGH) && result > HiLoRecord.MID)
+      || (this.equals(HiLoBetType.LOW) && result < HiLoRecord.MID);
   }
-  public HiLoBetType fromString(String input) throws InvalidInputError {
+  public static HiLoBetType fromString(String input) throws InvalidInputError {
     input = input.trim().toLowerCase();
     Matcher mat = typePat.matcher(input);
     if( !mat.matches() )

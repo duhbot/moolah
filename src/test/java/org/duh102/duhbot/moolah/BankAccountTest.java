@@ -5,9 +5,7 @@ import java.text.ParseException;
 
 import org.duh102.duhbot.moolah.exceptions.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -100,29 +98,44 @@ class BankAccountTest {
   /*
    * Object equality
    */
-  @Test public void testEqualsYes() throws Exception {
+  @Test
+  public void testEqualsYes() throws Exception {
     BankAccount a = new BankAccount(0l, "test", 0l, defTime);
     BankAccount b = new BankAccount(0l, "test", 0l, defTime);
     assertEquals(a, b, String.format("!( %d == %d && %d == %d && '%s' == '%s' && %s == %s )", a.uid, b.uid, a.balance, b.balance, a.user, b.user, LocalTimestamp.format(a.lastMined), LocalTimestamp.format(b.lastMined)) );
   }
-  @Test public void testEqualsNoUID() throws Exception {
+  @Test
+  public void testEqualsNoUID() throws Exception {
     BankAccount a = new BankAccount(0l, "test", 0l, defTime);
     BankAccount b = new BankAccount(1l, "test", 0l, defTime);
     assertNotEquals(a, b);
   }
-  @Test public void testEqualsNoUser() throws Exception {
+  @Test
+  public void testEqualsNoUser() throws Exception {
     BankAccount a = new BankAccount(0l, "test", 0l, defTime);
     BankAccount b = new BankAccount(0l, "test1", 0l, defTime);
     assertNotEquals(a, b);
   }
-  @Test public void testEqualsNoBalance() throws Exception {
+  @Test
+  public void testEqualsNoBalance() throws Exception {
     BankAccount a = new BankAccount(0l, "test", 0l, defTime);
     BankAccount b = new BankAccount(0l, "test", 1l, defTime);
     assertNotEquals(a, b);
   }
-  @Test public void testEqualsNoLastMined() throws Exception {
+  @Test
+  public void testEqualsNoLastMined() throws Exception {
     BankAccount a = new BankAccount(0l, "test", 0l, defTime);
     BankAccount b = new BankAccount(0l, "test", 0l, defTime2);
     assertNotEquals(a, b);
+  }
+
+  /*
+   * toString(), basic testing to ensure it outputs something
+   */
+  @Test
+  public void testToString() throws Exception {
+    String a = (new BankAccount(0l, "test", 0l, defTime)).toString();
+    assertTrue(a != null);
+    assertTrue(a.length() > 0);
   }
 }

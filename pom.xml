@@ -18,6 +18,12 @@
         <scope>test</scope>
     </dependency>
     <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>5.2.0</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
         <groupId>com.github.duhbot</groupId>
         <artifactId>duhbot</artifactId>
         <version>v1.0.2</version>

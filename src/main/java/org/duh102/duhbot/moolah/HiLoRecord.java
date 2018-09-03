@@ -7,7 +7,7 @@ import org.duh102.duhbot.moolah.exceptions.*;
 
 public class HiLoRecord {
   private static final Random rand = new Random();
-  public static final int MIN = 0, MAX = 11, MID = (MAX + MIN / 2);
+  public static final int MIN = 0, MAX = 11, MID = (MAX + MIN) / 2;
   public long outcomeID;
   public long uid;
   public int resultInt;
@@ -41,8 +41,12 @@ public class HiLoRecord {
   public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException {
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
-    double mult = hiLo.getSatisfied(result, MID)?hiLo.getMultiplier():0.0;
+    double mult = hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0;
     long payout = Math.round(wager * mult);
-    return new HiLoRecord(0, 0, result, hiLo, wager, payout, mult, timestamp);
+    return new HiLoRecord(0l, account.uid, result, hiLo, wager, payout, mult, timestamp);
+  }
+
+  public String toString() {
+    return String.format("HiLoRecord(rid %d, uid %d, result %d, hiLo %s, wager %d, payout %d, mult %.2f, timestamp %s)", outcomeID, uid, resultInt, hiLo.toString(), wager, payout, multiplier, LocalTimestamp.format(timestamp));
   }
 }
