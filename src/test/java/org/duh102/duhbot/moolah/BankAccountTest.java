@@ -1,5 +1,8 @@
 package org.duh102.duhbot.moolah;
 
+import java.sql.Timestamp;
+import java.text.ParseException;
+
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,18 +12,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 class BankAccountTest {
+  static Timestamp defTime;
+  static Timestamp defTime2;
+  static {
+    try {
+      defTime = LocalTimestamp.parse("2011-11-11 11:11:11.111T-0400");
+      defTime2 = LocalTimestamp.parse("2011-11-11 11:11:11.112T-0400");
+    } catch( ParseException pe ) {
+      defTime = LocalTimestamp.now();
+      defTime2 = LocalTimestamp.now();
+    }
+  }
   /*
    * Constructor tests
    */
   @Test
   public void testConstructorEasy() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 100l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 100l, defTime);
     assertEquals(a.balance, 100l);
   }
   @Test
   public void testConstructorNegativeBal() throws Exception {
     assertThrows(ImproperBalanceAmount.class, () -> {
-        BankAccount a = new BankAccount(0l, "user", -100l, 0l);
+        BankAccount a = new BankAccount(0l, "user", -100l, defTime);
     });
   }
 
@@ -29,21 +43,21 @@ class BankAccountTest {
    */
   @Test
   public void testAddEasy() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 0l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 0l, defTime);
     a.addFunds(100l);
     assertEquals(a.balance, 100l);
   }
 
   @Test
   public void testAddTypeCastBal() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 0l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 0l, defTime);
     a.addFunds(100);
     assertEquals(a.balance, 100l);
   }
 
   @Test
   public void testAddNegativeBal() throws Exception {
-    BankAccount a = new BankAccount(0l, "User", 0l, 0l);
+    BankAccount a = new BankAccount(0l, "User", 0l, defTime);
     assertThrows(ImproperBalanceAmount.class, () -> {
         a.addFunds(-1l);
     });
@@ -55,14 +69,14 @@ class BankAccountTest {
 
   @Test
   public void testSubEasy() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 100l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 100l, defTime);
     a.subFunds(50l);
     assertEquals(a.balance, 50l);
   }
 
   @Test
   public void testSubInsufficientEasy() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 50l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 50l, defTime);
     assertThrows(InsufficientFundsException.class, () -> {
         a.subFunds(51l);
     });
@@ -70,14 +84,14 @@ class BankAccountTest {
 
   @Test
   public void testSubTypeCastBal() throws Exception {
-    BankAccount a = new BankAccount(0l, "user", 100l, 0l);
+    BankAccount a = new BankAccount(0l, "user", 100l, defTime);
     a.subFunds(50);
     assertEquals(a.balance, 50l);
   }
 
   @Test
   public void testSubNegativeBal() throws Exception {
-    BankAccount a = new BankAccount(0l, "User", 1000l, 0l);
+    BankAccount a = new BankAccount(0l, "User", 1000l, defTime);
     assertThrows(ImproperBalanceAmount.class, () -> {
         a.subFunds(-1l);
     });
@@ -87,28 +101,28 @@ class BankAccountTest {
    * Object equality
    */
   @Test public void testEqualsYes() throws Exception {
-    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
-    BankAccount b = new BankAccount(0l, "test", 0l, 0l);
-    assertEquals(a, b, String.format("!( %d == %d && %d == %d && '%s' == '%s' && %d == %d )", a.uid, b.uid, a.balance, b.balance, a.user, b.user, a.lastMined, b.lastMined) );
+    BankAccount a = new BankAccount(0l, "test", 0l, defTime);
+    BankAccount b = new BankAccount(0l, "test", 0l, defTime);
+    assertEquals(a, b, String.format("!( %d == %d && %d == %d && '%s' == '%s' && %s == %s )", a.uid, b.uid, a.balance, b.balance, a.user, b.user, LocalTimestamp.format(a.lastMined), LocalTimestamp.format(b.lastMined)) );
   }
   @Test public void testEqualsNoUID() throws Exception {
-    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
-    BankAccount b = new BankAccount(1l, "test", 0l, 0l);
+    BankAccount a = new BankAccount(0l, "test", 0l, defTime);
+    BankAccount b = new BankAccount(1l, "test", 0l, defTime);
     assertNotEquals(a, b);
   }
   @Test public void testEqualsNoUser() throws Exception {
-    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
-    BankAccount b = new BankAccount(0l, "test1", 0l, 0l);
+    BankAccount a = new BankAccount(0l, "test", 0l, defTime);
+    BankAccount b = new BankAccount(0l, "test1", 0l, defTime);
     assertNotEquals(a, b);
   }
   @Test public void testEqualsNoBalance() throws Exception {
-    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
-    BankAccount b = new BankAccount(0l, "test", 1l, 0l);
+    BankAccount a = new BankAccount(0l, "test", 0l, defTime);
+    BankAccount b = new BankAccount(0l, "test", 1l, defTime);
     assertNotEquals(a, b);
   }
   @Test public void testEqualsNoLastMined() throws Exception {
-    BankAccount a = new BankAccount(0l, "test", 0l, 0l);
-    BankAccount b = new BankAccount(0l, "test", 0l, 1l);
+    BankAccount a = new BankAccount(0l, "test", 0l, defTime);
+    BankAccount b = new BankAccount(0l, "test", 0l, defTime2);
     assertNotEquals(a, b);
   }
 }

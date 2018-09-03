@@ -1,7 +1,7 @@
 package org.duh102.duhbot.moolah;
 
 import java.sql.Timestamp;
-import java.sql.TimeZone;
+import java.util.TimeZone;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -15,19 +15,19 @@ public class LocalTimestamp {
     noZonePattern.setTimeZone(TimeZone.getDefault());
     zonePattern.setTimeZone(TimeZone.getDefault());
   }
-  public static Timestamp currentTimestamp() {
+  public static Timestamp now() {
     return new Timestamp(System.currentTimeMillis());
   }
   // When parsing timestamps we return a local-zone timestamp, as timestamps do not have knowledge of zones
   // However, we respect the zone given in the original input (if it exists), we just immediately convert it
-  public static Timestamp tryParseDate(String input) throws ParseException {
+  public static Timestamp parse(String input) throws ParseException {
     try {
       return new Timestamp(zonePattern.parse(input).getTime());
     } catch( ParseException pe ) {
       return new Timestamp(noZonePattern.parse(input).getTime());
     }
   }
-  public static String formatTimestamp(Timestamp input) {
+  public static String format(Timestamp input) {
     return zonePattern.format(input);
   }
 }

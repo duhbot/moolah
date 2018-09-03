@@ -3,9 +3,9 @@ package org.duh102.duhbot.moolah;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.text.ParseException;
 import org.sqlite.SQLiteConfig;
 
-import org.duh102.duhbot.moolah.*;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class BankDB {
@@ -50,11 +50,11 @@ public class BankDB {
       Statement stat = conn.createStatement();
       //This table is not safe for networks with no nickserv or usage on several
       //  networks (with different nickserv databases)! We only store the registered nick
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS bankAccount (uid INTEGER PRIMARY KEY, user TEXT UNIQUE NOT NULL, balance INTEGER NOT NULL DEFAULT 0, lastMined TEXT NOT NULL DEFAULT (strftime('YYYY-MM-DD HH:MM:SS.SSS', datetime('now', '-1 day'))) );");
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS slotOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, slotImages TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp TEXT NOT NULL DEFAULT (strftime('YYYY-MM-DD HH:MM:SS.SSS', CURRENT_TIMESTAMP)) );");
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS hiLoOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, resultInt INTEGER NOT NULL, hiLo TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp TEXT NOT NULL DEFAULT (strftime('YYYY-MM-DD HH:MM:SS.SSS', CURRENT_TIMESTAMP)) );");
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS mineOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, mineFractions INTEGER NOT NULL, richness REAL NOT NULL, yield INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('YYYY-MM-DD HH:MM:SS.SSS', CURRENT_TIMESTAMP)) );");
-      stat.executeUpdate("CREATE TABLE IF NOT EXISTS transferRecord (outcomeid INTEGER PRIMARY KEY, uidSource INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, uidDest INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, amount INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('YYYY-MM-DD HH:MM:SS.SSS', CURRENT_TIMESTAMP)) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS bankAccount (uid INTEGER PRIMARY KEY, user TEXT UNIQUE NOT NULL, balance INTEGER NOT NULL DEFAULT 0, lastMined TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', datetime('now', '-1 day', 'localtime'))) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS slotOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, slotImages TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', datetime('now', 'localtime'))) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS hiLoOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, resultInt INTEGER NOT NULL, hiLo TEXT NOT NULL, wager INTEGER NOT NULL, payout INTEGER NOT NULL, payoutMul REAL NOT NULL, timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', datetime('now', 'localtime'))) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS mineOutcome (outcomeid INTEGER PRIMARY KEY, uid INTEGER REFERENCES bankAccount(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, mineFractions INTEGER NOT NULL, richness REAL NOT NULL, yield INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', datetime('now', 'localtime'))) );");
+      stat.executeUpdate("CREATE TABLE IF NOT EXISTS transferRecord (outcomeid INTEGER PRIMARY KEY, uidSource INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, uidDest INTEGER REFERENCES bankAccount(uid) ON DELETE SET NULL ON UPDATE CASCADE NOT NULL, amount INTEGER NOT NULL, timestamp INTEGER NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', datetime('now', 'localtime'))) );");
     } catch(SQLException sqle) {
       throw new InvalidDBConfiguration(sqle);
     }
@@ -147,7 +147,13 @@ public class BankDB {
       while (rs.next()) {
         long uid = rs.getLong("uid");
         long balance = rs.getLong("balance");
-        long lastMined = rs.getLong("lastMined");
+        Timestamp lastMined = null;
+        try {
+          lastMined = LocalTimestamp.parse(rs.getString("lastMined"));
+        } catch( ParseException pe ) {
+          //If we can't read the last mined timestamp, just set it to now
+          lastMined = LocalTimestamp.now();
+        }
         try {
           account = new BankAccount(uid, user, balance, lastMined);
         } catch( ImproperBalanceAmount iba ) {
@@ -180,7 +186,13 @@ public class BankDB {
       while (rs.next()) {
         String user = rs.getString("user");
         long balance = rs.getLong("balance");
-        long lastMined = rs.getLong("lastMined");
+        Timestamp lastMined = null;
+        try {
+          lastMined = LocalTimestamp.parse(rs.getString("lastMined"));
+        } catch( ParseException pe ) {
+          //If we can't read the last mined timestamp, just set it to now
+          lastMined = LocalTimestamp.now();
+        }
         try {
           account = new BankAccount(uid, user, balance, lastMined);
         } catch( ImproperBalanceAmount iba ) {
@@ -204,7 +216,7 @@ public class BankDB {
       PreparedStatement stat = conn.prepareStatement("UPDATE bankAccount SET user = ?, balance = ?, lastMined = ? WHERE uid = ?;");
       stat.setString(1, account.user);
       stat.setLong(2, account.balance);
-      stat.setLong(3, account.lastMined);
+      stat.setString(3, LocalTimestamp.format(account.lastMined));
       stat.setLong(4, account.uid);
       stat.executeUpdate();
     } catch( SQLException sqle ) {
@@ -222,7 +234,7 @@ public class BankDB {
       stat.setLong(3, wager);
       stat.setLong(4, payout);
       stat.setDouble(5, multiplier);
-      stat.setString(6, timestamp.);
+      stat.setString(6, LocalTimestamp.format(timestamp));
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
       try {
@@ -243,17 +255,17 @@ public class BankDB {
     }
   }
 
-  public HiLoRecord recordHiLoRecord(long uid, int resultInt, String hiLo, long wager, long payout, double multiplier, long timestamp) throws RecordFailure {
+  public HiLoRecord recordHiLoRecord(long uid, int resultInt, HiLoBetType hiLo, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
       PreparedStatement stat = conn.prepareStatement("INSERT INTO hiLoOutcome (uid, resultInt, hiLo, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
       stat.setLong(1, uid);
       stat.setInt(2, resultInt);
-      stat.setString(3, hiLo);
+      stat.setString(3, hiLo.toString());
       stat.setLong(4, wager);
       stat.setLong(5, payout);
       stat.setDouble(6, multiplier);
-      stat.setLong(7, timestamp);
+      stat.setString(7, LocalTimestamp.format(timestamp));
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
       try {
@@ -274,7 +286,7 @@ public class BankDB {
     }
   }
 
-  public MineRecord recordMineOutcome(long uid, int mineFractions, double richness, long yield, long timestamp) throws RecordFailure {
+  public MineRecord recordMineOutcome(long uid, int mineFractions, double richness, long yield, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
       PreparedStatement stat = conn.prepareStatement("INSERT INTO mineOutcome (uid, mineFractions, richness, yield, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
@@ -282,7 +294,7 @@ public class BankDB {
       stat.setInt(2, mineFractions);
       stat.setDouble(3, richness);
       stat.setLong(4, yield);
-      stat.setLong(5, timestamp);
+      stat.setString(5, LocalTimestamp.format(timestamp));
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
       try {
@@ -303,14 +315,14 @@ public class BankDB {
     }
   }
 
-  public TransferRecord recordTransfer(long uidSource, long uidDestination, long amount, long timestamp) throws RecordFailure {
+  public TransferRecord recordTransfer(long uidSource, long uidDestination, long amount, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
       PreparedStatement stat = conn.prepareStatement("INSERT INTO transferRecord (uidSource, uidDest, amount, timestamp) values (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
       stat.setLong(1, uidSource);
       stat.setLong(2, uidDestination);
       stat.setLong(3, amount);
-      stat.setLong(4, timestamp);
+      stat.setString(4, LocalTimestamp.format(timestamp));
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
       try {

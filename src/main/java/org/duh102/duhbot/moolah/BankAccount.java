@@ -8,8 +8,8 @@ public class BankAccount {
   public long uid;
   public String user;
   public long balance;
-  public long lastMined;
-  public BankAccount(long uid, String user, long balance, long lastMined) throws ImproperBalanceAmount {
+  public Timestamp lastMined;
+  public BankAccount(long uid, String user, long balance, Timestamp lastMined) throws ImproperBalanceAmount {
     this.uid = uid;
     this.user = user;
     this.balance = balance;
@@ -49,10 +49,10 @@ public class BankAccount {
   }
   public boolean equals(BankAccount other) {
     return (this.uid == other.uid && this.balance == other.balance
-      && this.user.equals(other.user) && this.lastMined == other.lastMined);
+      && this.user.equals(other.user) && this.lastMined.equals(other.lastMined));
   }
 
   public String toString() {
-    return String.format("BankAccount(%d, \"%s\", $%,d, %s)", uid, user, balance, (new Timestamp(lastMined*1000)).toString());
+    return String.format("BankAccount(%d, \"%s\", $%,d, %s)", uid, user, balance, LocalTimestamp.format(lastMined));
   }
 }

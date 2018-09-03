@@ -35,9 +35,9 @@ class BankDBTest {
       BankAccount acct = db.openAccount("test");
       assertEquals(acct.balance, 0l);
       assertEquals(acct.user, "test");
-      long now = System.currentTimeMillis()/1000;
-      long timeDiff = now - acct.lastMined;
-      assertTrue(timeDiff >= 24*60*60, String.format("Time less than 24 hours back ( %,d < %,d )", timeDiff, 24*60*60));
+      Timestamp now = LocalTimestamp.now();
+      long timeDiff = now.getTime() - acct.lastMined.getTime();
+      assertTrue(timeDiff >= 24*60*60*1000, String.format("Time less than 24 hours back ( %,d < %,d ) (lastMined is %s, now is %s)", timeDiff, 24*60*60*1000, LocalTimestamp.format(acct.lastMined), LocalTimestamp.format(now)));
     } finally {
       // do not persist test changes (even though this is an in-memory DB, always good to clean up)
       conn.rollback();
@@ -63,8 +63,10 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test");
       BankAccount acctE = db.getAccount("test");
+      assertTrue(acctE == null);
+      BankAccount acct = db.openAccount("test");
+      acctE = db.getAccount("test");
       assertEquals(acct, acctE);
     } finally {
       conn.rollback();
