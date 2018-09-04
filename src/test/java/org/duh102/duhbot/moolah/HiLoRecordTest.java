@@ -102,6 +102,11 @@ class HiLoRecordTest {
   }
 
   @Test
+  public void testObjectEquals() throws Exception {
+    assertNotEquals(matchWith, new Object());
+  }
+
+  @Test
   public void testToString() throws Exception {
     assertTrue(matchWith.toString().length() > 0);
   }
