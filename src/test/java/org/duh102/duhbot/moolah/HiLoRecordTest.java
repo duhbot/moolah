@@ -100,4 +100,9 @@ class HiLoRecordTest {
   public void testEquals(HiLoRecord b, boolean matches) throws Exception {
     assertTrue(matchWith.equals(b) == matches, String.format("a %s should %s b %s", matchWith.toString(), matches?"==":"!=", b.toString()));
   }
+
+  @Test
+  public void testToString() throws Exception {
+    assertTrue(matchWith.toString().length() > 0);
+  }
 }
