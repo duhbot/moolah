@@ -225,12 +225,12 @@ public class BankDB {
     return account;
   }
 
-  public SlotRecord recordSlotRecord(long uid, String slotState, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
+  public SlotRecord recordSlotRecord(long uid, SlotReelImage[] slotState, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
       PreparedStatement stat = conn.prepareStatement("INSERT INTO slotOutcome (uid, slotImages, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
       stat.setLong(1, uid);
-      stat.setString(2, slotState);
+      stat.setString(2, SlotRecord.getRegexString(slotState));
       stat.setLong(3, wager);
       stat.setLong(4, payout);
       stat.setDouble(5, multiplier);
