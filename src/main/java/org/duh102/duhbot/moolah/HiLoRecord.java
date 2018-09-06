@@ -43,16 +43,16 @@ public class HiLoRecord {
       && this.multiplier == other.multiplier && this.timestamp.equals(other.timestamp);
   }
   public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount {
-    account.subFunds(wager)
+    account.subFunds(wager);
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
     double mult = Math.abs(hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0);
     long payout = Math.abs(Math.round(wager * mult));
     try {
-      account.addFunds(payout)
+      account.addFunds(payout);
     } catch( ImproperBalanceAmount iba ) {
       try {
-        account.addFunds(wager)
+        account.addFunds(wager);
       } catch( ImproperBalanceAmount iba2 ) {
         iba2.printStackTrace();
       }

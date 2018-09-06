@@ -72,7 +72,7 @@ public class SlotRecord {
     } catch( ImproperBalanceAmount iba ) {
       iba.printStackTrace();
       try {
-        account.addFunds(wager)
+        account.addFunds(wager);
       } catch( ImproperBalanceAmount iba2 ) {
         iba2.printStackTrace();
       }
