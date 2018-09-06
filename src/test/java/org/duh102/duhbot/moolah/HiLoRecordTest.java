@@ -30,17 +30,17 @@ class HiLoRecordTest {
     }
   }
 
-  //TODO: might want to seed the random to reduce potential test thrash
   private static Stream<Arguments> hiLoBetProvider() {
     return Stream.of(
-        Arguments.of(HI),
-        Arguments.of(EQ),
-        Arguments.of(LO)
+        Arguments.of(HI, 100l),
+        Arguments.of(EQ, 101l),
+        Arguments.of(LO, 102l)
       );
   }
   @ParameterizedTest(name = "Bet on {0}")
   @MethodSource("hiLoBetProvider")
-  public void testBetHiLo(HiLoBetType type) throws Exception {
+  public void testBetHiLo(HiLoBetType type, long newSeed) throws Exception {
+    HiLoRecord.setSeed(newSeed);
     boolean won = false, lost = false;
     long wager = 1l;
     long bal = 10l;
@@ -71,6 +71,25 @@ class HiLoRecordTest {
       }
       iterCount++;
     }
+  }
+  @Test
+  public void testBetHiLoInsufficient() throws Exception {
+    HiLoRecord.setSeed(100l);
+    BankAccount acct = new BankAccount(101l, "a username", 100l, LocalTimestamp.now());
+    assertThrows(InsufficientFundsException.class, () -> {
+      HiLoRecord.betHiLo(acct, HiLoBetType.HIGH, acct.balance + 1l);
+    });
+  }
+  @Test
+  public void testBetHiLoBalanceChange() throws Exception {
+    HiLoRecord.setSeed(110l);
+    long oldBalance = 100l;
+    BankAccount acct = new BankAccount(101l, "a username", oldBalance, LocalTimestamp.now());
+    HiLoRecord bet = HiLoRecord.betHiLo(acct, HiLoBetType.HIGH, oldBalance / 2);
+    if( bet.payout > 0l )
+      assertEquals(oldBalance - bet.wager + bet.payout, acct.balance);
+    else
+      assertEquals(oldBalance - bet.wager, acct.balance);
   }
 
   private static long rid1 = 10l, rid2 = 11l;

@@ -26,6 +26,9 @@ public class Mine {
       nextUpdate = nextUpdate + pairRet.second;
     }
   }
+  public static void setSeed(long seed) {
+    rand.setSeed(seed);
+  }
   public Pair<Double, Long> genMineRichness() {
     double gauss = rand.nextGaussian();
     // For 10k runs, saw a distribution of about [min, q1, q2, q3, max] [1.00, 1.47, 2.00, 3.21, 113.48]

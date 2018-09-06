@@ -32,6 +32,7 @@ class MineRecordTest {
   }
   @Test
   public void testMineAttempt() throws Exception {
+    Mine.setSeed(101l);
     Timestamp now = LocalTimestamp.now();
     BankAccount acct = new BankAccount(101l, "user", 0l, new Timestamp(0l));
     MineRecord record = MineRecord.mineAttempt(acct);
@@ -40,9 +41,11 @@ class MineRecordTest {
     assertTrue(record.richness >= 1.0);
     assertEquals(record.yield, Math.round(record.richness * record.mineFractions));
     assertTrue(record.timestamp.compareTo(now) >= 0);
+    assertTrue(acct.lastMined.compareTo(now) >= 0);
   }
   @Test
   public void testMineAttemptException() throws Exception {
+    Mine.setSeed(102l);
     BankAccount acct = new BankAccount(101l, "user", 0l, LocalTimestamp.now());
     assertThrows(MineAttemptTooSoon.class, () -> {
       MineRecord record = MineRecord.mineAttempt(acct);
@@ -50,6 +53,8 @@ class MineRecordTest {
   }
   @Test
   public void testMineAttemptChunks() throws Exception {
+    Mine.setSeed(105l);
+    Timestamp now = LocalTimestamp.now();
     //3*chunk time (plus some wiggle room)
     Timestamp threeChunksAgo = new Timestamp(System.currentTimeMillis() - (3*MineRecord.MINE_CHUNK_LENGTH + 10));
     BankAccount acct = new BankAccount(101l, "user", 0l, threeChunksAgo);
@@ -58,6 +63,19 @@ class MineRecordTest {
     assertEquals(record.mineFractions, 3);
     assertTrue(record.richness >= 1.0);
     assertEquals(record.yield, Math.round(record.richness * record.mineFractions));
+    assertTrue(acct.lastMined.compareTo(now) >= 0);
+  }
+  @Test
+  public void testMineAttemptBalanceChange() throws Exception {
+    Mine.setSeed(120l);
+    Timestamp now = LocalTimestamp.now();
+    //3*chunk time (plus some wiggle room)
+    Timestamp threeChunksAgo = new Timestamp(System.currentTimeMillis() - (3*MineRecord.MINE_CHUNK_LENGTH + 10));
+    long beforeBalance = 100l;
+    BankAccount acct = new BankAccount(101l, "user", beforeBalance, threeChunksAgo);
+    MineRecord record = MineRecord.mineAttempt(acct);
+    assertEquals(beforeBalance + record.yield, acct.balance);
+    assertTrue(acct.lastMined.compareTo(now) >= 0);
   }
 
   private static long rid1 = 10l, rid2 = 11l;

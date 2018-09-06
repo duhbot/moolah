@@ -27,6 +27,10 @@ public class HiLoRecord {
     this.timestamp = timestamp;
   }
 
+  public static void setSeed(long seed) {
+    rand.setSeed(seed);
+  }
+
   public boolean equals(Object other) {
     if( !(other instanceof HiLoRecord) )
       return false;
@@ -39,10 +43,14 @@ public class HiLoRecord {
       && this.multiplier == other.multiplier && this.timestamp.equals(other.timestamp);
   }
   public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException {
+    if( account.balance < wager ) {
+      throw new InsufficientFundsException();
+    }
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
     double mult = hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0;
     long payout = Math.round(wager * mult);
+    account.balance = account.balance - wager + payout;
     return new HiLoRecord(0l, account.uid, result, hiLo, wager, payout, mult, timestamp);
   }
 

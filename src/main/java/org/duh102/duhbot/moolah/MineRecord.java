@@ -41,7 +41,10 @@ public class MineRecord {
     double richness = Mine.getMine().getRichness();
     //use only the chunks we've fully "generated", discard partials
     int chunks = (int)Math.max(1, Math.min(MAX_CHUNKS, Math.floor(timeSinceLastMine / (double)MINE_CHUNK_LENGTH)));
-    return new MineRecord(0l, account.uid, chunks, richness, Math.round(chunks * richness), now);
+    long payout = Math.round(chunks * richness);
+    account.balance += payout;
+    account.lastMined = now;
+    return new MineRecord(0l, account.uid, chunks, richness, payout, now);
   }
 
   public String toString() {

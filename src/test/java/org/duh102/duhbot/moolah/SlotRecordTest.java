@@ -32,6 +32,7 @@ class SlotRecordTest {
 
   @Test
   public void testGetSlotImages() throws Exception {
+    SlotRecord.setSeed(101l);
     SlotReelImage[] images = SlotRecord.getSlotImages();
     for( SlotReelImage img : images ) {
       assertNotEquals(null, img);
@@ -56,9 +57,9 @@ class SlotRecordTest {
     + FI.toString() + BE.toString() + LE.toString() + SE.toString() + BA.toString();
     assertEquals(expected, SlotRecord.getImagesString(images));
   }
-  // Fragile when unseeded, no guarantee they'll be different
   @Test
   public void testGetSlotImagesDiff() throws Exception {
+    Mine.setSeed(105l);
     SlotReelImage[] a = SlotRecord.getSlotImages();
     SlotReelImage[] b = SlotRecord.getSlotImages();
     assertFalse(Arrays.equals(a, b));
@@ -92,12 +93,12 @@ class SlotRecordTest {
 
   @Test
   public void testSlotAttempt() throws Exception {
+    SlotRecord.setSeed(110l);
     BankAccount acct = new BankAccount(101l, "auser", 1000l, LocalTimestamp.now());
     SlotRecord atmpt = SlotRecord.slotAttempt(acct, 100l);
     assertEquals(acct.uid, atmpt.uid);
     assertEquals(100l, atmpt.wager);
     assertEquals(Math.round(Math.ceil(atmpt.wager * atmpt.multiplier)), atmpt.payout);
-    assertTrue(acct.lastMined.getTime() - atmpt.timestamp.getTime() < 1000l);
   }
 
   private static long rid1 = 10l, rid2 = 11l;
@@ -124,6 +125,25 @@ class SlotRecordTest {
   @MethodSource("equalsProvider")
   public void testEquals(SlotRecord b, boolean matches) throws Exception {
     assertTrue(matchWith.equals(b) == matches, String.format("a %s should %s b %s", matchWith.toString(), matches?"==":"!=", b.toString()));
+  }
+
+  @Test
+  public void testSlotAttemptInsufficientFunds() throws Exception {
+    SlotRecord.setSeed(130l);
+    long oldBalance = 100l;
+    BankAccount acct = new BankAccount(101l, "auser", oldBalance, LocalTimestamp.now());
+    assertThrows(InsufficientFundsException.class, () -> {
+      SlotRecord atmpt = SlotRecord.slotAttempt(acct, oldBalance + 1l);
+    });
+  }
+
+  @Test
+  public void testSlotAttemptBalanceChange() throws Exception {
+    SlotRecord.setSeed(160l);
+    long oldBalance = 100l;
+    BankAccount acct = new BankAccount(101l, "auser", oldBalance, LocalTimestamp.now());
+    SlotRecord atmpt = SlotRecord.slotAttempt(acct, oldBalance/2);
+    assertEquals(oldBalance - atmpt.wager + atmpt.payout, acct.balance);
   }
 
   @Test

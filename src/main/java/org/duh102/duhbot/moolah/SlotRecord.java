@@ -7,6 +7,8 @@ import java.util.Random;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+import org.duh102.duhbot.moolah.exceptions.*;
+
 public class SlotRecord {
   public static final SlotReelImage[] choices = new SlotReelImage[] {
     SlotReelImage.CHERRIES, SlotReelImage.DOLLAR, SlotReelImage.SEVEN,
@@ -43,6 +45,10 @@ public class SlotRecord {
     this.timestamp = timestamp;
   }
 
+  public static void setSeed(long seed) {
+    rand.setSeed(seed);
+  }
+
   public boolean equals(Object other) {
     if( !(other instanceof SlotRecord) )
       return false;
@@ -55,11 +61,14 @@ public class SlotRecord {
       && this.timestamp.equals(other.timestamp);
   }
 
-  public static SlotRecord slotAttempt(BankAccount account, long wager) {
+  public static SlotRecord slotAttempt(BankAccount account, long wager) throws InsufficientFundsException {
+    if( wager > account.balance )
+      throw new InsufficientFundsException();
     Timestamp now = LocalTimestamp.now();
     SlotReelImage[] reels = getSlotImages();
     double multiplier = getImagesMultiplier(reels);
     long payout = Math.round(Math.ceil(wager * multiplier));
+    account.balance = account.balance - wager + payout;
     return new SlotRecord(0l, account.uid, reels, wager, payout, multiplier, now);
   }
 
