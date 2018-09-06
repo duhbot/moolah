@@ -61,14 +61,22 @@ public class SlotRecord {
       && this.timestamp.equals(other.timestamp);
   }
 
-  public static SlotRecord slotAttempt(BankAccount account, long wager) throws InsufficientFundsException {
-    if( wager > account.balance )
-      throw new InsufficientFundsException();
+  public static SlotRecord slotAttempt(BankAccount account, long wager) throws InsufficientFundsException, ImproperBalanceAmount {
+    account.subFunds(wager);
     Timestamp now = LocalTimestamp.now();
     SlotReelImage[] reels = getSlotImages();
     double multiplier = getImagesMultiplier(reels);
-    long payout = Math.round(Math.ceil(wager * multiplier));
-    account.balance = account.balance - wager + payout;
+    long payout = Math.abs(Math.round(Math.ceil(wager * multiplier)));
+    try {
+      account.addFunds(payout);
+    } catch( ImproperBalanceAmount iba ) {
+      iba.printStackTrace();
+      try {
+        account.addFunds(wager)
+      } catch( ImproperBalanceAmount iba2 ) {
+        iba2.printStackTrace();
+      }
+    }
     return new SlotRecord(0l, account.uid, reels, wager, payout, multiplier, now);
   }
 

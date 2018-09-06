@@ -18,13 +18,22 @@ public class TransferRecord {
     this.timestamp = timestamp;
   }
 
-  public static TransferRecord makeTransfer(BankAccount source, BankAccount destination, long amount) throws InsufficientFundsException, SameAccountException {
+  public static TransferRecord makeTransfer(BankAccount source, BankAccount destination, long amount) throws InsufficientFundsException, ImproperBalanceAmount, SameAccountException {
     if( source.balance < amount )
       throw new InsufficientFundsException();
     if( source.equals(destination) || source.uid == destination.uid )
       throw new SameAccountException();
-    source.balance -= amount;
-    destination.balance += amount;
+    source.subFunds(amount);
+    try {
+      destination.addFunds(amount);
+    } catch( ImproperBalanceAmount iba ) {
+      iba.printStackTrace();
+      try {
+        source.addFunds(amount);
+      } catch( ImproperBalanceAmount iba2 ) {
+        iba2.printStackTrace();
+      }
+    }
     return new TransferRecord(0l, source.uid, destination.uid, amount, LocalTimestamp.now());
   }
 

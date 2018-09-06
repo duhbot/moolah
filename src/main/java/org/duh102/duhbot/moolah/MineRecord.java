@@ -41,9 +41,13 @@ public class MineRecord {
     double richness = Mine.getMine().getRichness();
     //use only the chunks we've fully "generated", discard partials
     int chunks = (int)Math.max(1, Math.min(MAX_CHUNKS, Math.floor(timeSinceLastMine / (double)MINE_CHUNK_LENGTH)));
-    long payout = Math.round(chunks * richness);
-    account.balance += payout;
-    account.lastMined = now;
+    long payout = Math.abs(Math.round(chunks * richness));
+    try {
+      account.addFunds(payout);
+      account.lastMined = now;
+    } catch( ImproperBalanceAmount iba ) {
+      iba.printStackTrace();
+    }
     return new MineRecord(0l, account.uid, chunks, richness, payout, now);
   }
 

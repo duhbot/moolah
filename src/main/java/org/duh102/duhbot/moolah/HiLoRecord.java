@@ -42,15 +42,21 @@ public class HiLoRecord {
       && this.wager == other.wager && this.payout == other.payout
       && this.multiplier == other.multiplier && this.timestamp.equals(other.timestamp);
   }
-  public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException {
-    if( account.balance < wager ) {
-      throw new InsufficientFundsException();
-    }
+  public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount {
+    account.subFunds(wager)
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
-    double mult = hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0;
-    long payout = Math.round(wager * mult);
-    account.balance = account.balance - wager + payout;
+    double mult = Math.abs(hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0);
+    long payout = Math.abs(Math.round(wager * mult));
+    try {
+      account.addFunds(payout)
+    } catch( ImproperBalanceAmount iba ) {
+      try {
+        account.addFunds(wager)
+      } catch( ImproperBalanceAmount iba2 ) {
+        iba2.printStackTrace();
+      }
+    }
     return new HiLoRecord(0l, account.uid, result, hiLo, wager, payout, mult, timestamp);
   }
 
