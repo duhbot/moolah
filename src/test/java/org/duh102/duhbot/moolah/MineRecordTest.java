@@ -1,6 +1,6 @@
 package org.duh102.duhbot.moolah;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.util.stream.Stream;
 
@@ -110,5 +110,59 @@ class MineRecordTest {
   @Test
   public void testToString() throws Exception {
     assertTrue(matchWith.toString().length() > 0);
+  }
+
+  /*
+   * Persistence and rollback tests
+   */
+  @Test
+  public void testRecordMineAttempt() throws Exception {
+    long startFunds = 100l;
+    Mine.setSeed(990l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    Timestamp now = LocalTimestamp.now();
+    try {
+      BankAccount acct = db.openAccount("test", startFunds);
+      MineRecord record = MineRecord.recordMineAttempt(db, acct);
+      assertEquals(startFunds + record.yield, acct.balance);
+      BankAccount stored = db.getAccountExcept(acct.uid);
+      assertEquals(stored, acct);
+      assertTrue(stored.lastMined.getTime() - now.getTime() <= 1000);
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordMineAttemptTooSoon() throws Exception {
+    Mine.setSeed(991l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount("test");
+      MineRecord record = MineRecord.recordMineAttempt(db, acct);
+      assertThrows(MineAttemptTooSoon.class, () -> {
+        MineRecord record2 = MineRecord.recordMineAttempt(db, acct);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordMineAttemptNoAcct() throws Exception {
+    Mine.setSeed(992l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = new BankAccount(0l, "auser", 0l, new Timestamp(System.currentTimeMillis()-1000*60*60*3));
+      assertThrows(AccountDoesNotExist.class, () -> {
+        MineRecord record = MineRecord.recordMineAttempt(db, acct);
+      });
+    } finally {
+      conn.rollback();
+    }
   }
 }

@@ -28,13 +28,34 @@ class BankDBTest {
   // Account
   @Test
   public void testMakeAccount() throws Exception {
+    long startingBalance = 0l;
+    String acctName = "test";
     BankDB db = BankDB.getMemoryInstance();
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test");
-      assertEquals(acct.balance, 0l);
-      assertEquals(acct.user, "test");
+      BankAccount acct = db.openAccount(acctName);
+      assertEquals(startingBalance, acct.balance);
+      assertEquals(acctName, acct.user);
+      Timestamp now = LocalTimestamp.now();
+      long timeDiff = now.getTime() - acct.lastMined.getTime();
+      assertTrue(timeDiff >= 24*60*60*1000, String.format("Time less than 24 hours back ( %,d < %,d ) (lastMined is %s, now is %s)", timeDiff, 24*60*60*1000, LocalTimestamp.format(acct.lastMined), LocalTimestamp.format(now)));
+    } finally {
+      // do not persist test changes (even though this is an in-memory DB, always good to clean up)
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testMakeAccountStartingBalance() throws Exception {
+    long startingBalance = 100l;
+    String acctName = "test";
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(acctName,  startingBalance);
+      assertEquals(startingBalance, acct.balance);
+      assertEquals(acctName, acct.user);
       Timestamp now = LocalTimestamp.now();
       long timeDiff = now.getTime() - acct.lastMined.getTime();
       assertTrue(timeDiff >= 24*60*60*1000, String.format("Time less than 24 hours back ( %,d < %,d ) (lastMined is %s, now is %s)", timeDiff, 24*60*60*1000, LocalTimestamp.format(acct.lastMined), LocalTimestamp.format(now)));
@@ -84,6 +105,20 @@ class BankDBTest {
       BankAccount acct = db.openAccount("test");
       BankAccount acctE = db.getAccountExcept("test");
       assertEquals(acct, acctE);
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testPushAccount() throws Exception {
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount("test", 100l);
+      db.pushAccount(acct);
+      BankAccount newAcct = db.getAccountExcept(acct.uid);
+      assertEquals(acct, newAcct);
     } finally {
       conn.rollback();
     }

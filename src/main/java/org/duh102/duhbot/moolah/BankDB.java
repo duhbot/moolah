@@ -101,6 +101,10 @@ public class BankDB {
   }
 
   public BankAccount openAccount(String user) throws AccountAlreadyExists, RecordFailure {
+    return openAccount(user, 0l);
+  }
+
+  public BankAccount openAccount(String user, long balance) throws AccountAlreadyExists, RecordFailure {
     Connection conn = getDBConnection();
     BankAccount account = null;
     account = getAccount(user);
@@ -108,8 +112,9 @@ public class BankDB {
       throw new AccountAlreadyExists(String.format("User %s registered as %d", user, account.uid));
 
     try {
-      PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user) VALUES (?);", Statement.RETURN_GENERATED_KEYS);
+      PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user, balance) VALUES (?, ?);", Statement.RETURN_GENERATED_KEYS);
       stat.setString(1, user);
+      stat.setLong(2, balance);
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
       if (rs.next()) {
@@ -225,6 +230,9 @@ public class BankDB {
     return account;
   }
 
+  public SlotRecord recordSlotRecord(SlotRecord record) throws RecordFailure {
+    return recordSlotRecord(record.uid, record.slotImages, record.wager, record.payout, record.multiplier, record.timestamp);
+  }
   public SlotRecord recordSlotRecord(long uid, SlotReelImage[] slotState, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
@@ -255,6 +263,9 @@ public class BankDB {
     }
   }
 
+  public HiLoRecord recordHiLoRecord(HiLoRecord record) throws RecordFailure {
+    return recordHiLoRecord(record.uid, record.resultInt, record.hiLo, record.wager, record.payout, record.multiplier, record.timestamp);
+  }
   public HiLoRecord recordHiLoRecord(long uid, int resultInt, HiLoBetType hiLo, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
@@ -286,10 +297,13 @@ public class BankDB {
     }
   }
 
+  public MineRecord recordMineOutcome(MineRecord record) throws RecordFailure {
+    return recordMineOutcome(record.uid, record.mineFractions, record.richness, record.yield, record.timestamp);
+  }
   public MineRecord recordMineOutcome(long uid, int mineFractions, double richness, long yield, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {
-      PreparedStatement stat = conn.prepareStatement("INSERT INTO mineOutcome (uid, mineFractions, richness, yield, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
+      PreparedStatement stat = conn.prepareStatement("INSERT INTO mineOutcome (uid, mineFractions, richness, yield, timestamp) values (?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
       stat.setLong(1, uid);
       stat.setInt(2, mineFractions);
       stat.setDouble(3, richness);
@@ -315,6 +329,9 @@ public class BankDB {
     }
   }
 
+  public TransferRecord recordTransfer(TransferRecord record) throws RecordFailure {
+    return recordTransfer(record.uidSource, record.uidDestination, record.amount, record.timestamp);
+  }
   public TransferRecord recordTransfer(long uidSource, long uidDestination, long amount, Timestamp timestamp) throws RecordFailure {
     Connection conn = getDBConnection();
     try {

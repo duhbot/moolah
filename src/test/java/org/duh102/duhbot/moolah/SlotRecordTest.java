@@ -1,6 +1,6 @@
 package org.duh102.duhbot.moolah;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -154,5 +154,74 @@ class SlotRecordTest {
   @Test
   public void testToString() throws Exception {
     assertTrue(matchWith.toString().length() > 0);
+  }
+
+  /*
+   * Persistence and rollback tests
+   */
+  @Test
+  public void testRecordSlotAttempt() throws Exception {
+    long startFunds = 100l, wager = startFunds/2;
+    SlotRecord.setSeed(990l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount("test", startFunds);
+      SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      assertEquals(startFunds - wager + record.payout, acct.balance);
+      BankAccount stored = db.getAccountExcept(acct.uid);
+      assertEquals(stored, acct);
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordSlotAttemptInsufficientFunds() throws Exception {
+    long startFunds = 100l, wager = startFunds+2;
+    SlotRecord.setSeed(910l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount("test", startFunds);
+      assertThrows(InsufficientFundsException.class, () -> {
+        SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordSlotAttemptImproperBalance() throws Exception {
+    long startFunds = 100l, wager = -startFunds;
+    SlotRecord.setSeed(920l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount("test", startFunds);
+      assertThrows(ImproperBalanceAmount.class, () -> {
+        SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordSlotAttemptNoAccount() throws Exception {
+    long startFunds = 100l, wager = startFunds+2;
+    SlotRecord.setSeed(930l);
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = new BankAccount(0l, "test", startFunds, LocalTimestamp.now());
+      assertThrows(InsufficientFundsException.class, () -> {
+        SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      });
+    } finally {
+      conn.rollback();
+    }
   }
 }

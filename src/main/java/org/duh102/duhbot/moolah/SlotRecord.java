@@ -1,6 +1,6 @@
 package org.duh102.duhbot.moolah;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
@@ -78,6 +78,29 @@ public class SlotRecord {
       }
     }
     return new SlotRecord(0l, account.uid, reels, wager, payout, multiplier, now);
+  }
+  public static SlotRecord recordSlotAttempt(BankDB db, BankAccount account, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
+    synchronized(db) {
+      BankAccount preAttempt = null;
+      try {
+        preAttempt = new BankAccount(account);
+      } catch( ImproperBalanceAmount iba ) {
+        iba.printStackTrace();
+      }
+      try {
+        SlotRecord record = slotAttempt(account, wager);
+        Connection conn = db.getDBConnection();
+        db.pushAccount(account);
+        return db.recordSlotRecord(record);
+      } catch( RecordFailure | AccountDoesNotExist e ) {
+        try {
+          account.revertTo(preAttempt);
+        } catch( ImproperBalanceAmount iba ) {
+          iba.printStackTrace();
+        }
+        throw e;
+      }
+    }
   }
 
   public static SlotReelImage[] getSlotImages() {

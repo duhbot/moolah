@@ -1,6 +1,6 @@
 package org.duh102.duhbot.moolah;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.util.stream.Stream;
 
@@ -94,5 +94,124 @@ class TransferRecordTest {
   @Test
   public void testToString() throws Exception {
     assertTrue(matchWith.toString().length() > 0);
+  }
+
+  /*
+   * Persistence and rollback tests
+   */
+  @Test
+  public void testRecordTransfer() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = 50l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccount dest = db.openAccount("buser", destFunds);
+      TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      assertEquals(sourceFunds - transferAmount, source.balance);
+      assertEquals(destFunds + transferAmount, dest.balance);
+      BankAccount sourceStored = db.getAccountExcept(source.uid);
+      BankAccount destStored = db.getAccountExcept(dest.uid);
+      assertEquals(source, sourceStored);
+      assertEquals(dest, destStored);
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferInsufficientFunds() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = sourceFunds+2l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccount dest = db.openAccount("buser", destFunds);
+      assertThrows(InsufficientFundsException.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferImproperBalance() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = -1l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccount dest = db.openAccount("buser", destFunds);
+      assertThrows(ImproperBalanceAmount.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferSameAccount() throws Exception {
+    long sourceFunds = 1000l, transferAmount = 50l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount("auser", sourceFunds);
+      assertThrows(SameAccountException.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, source, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferSourceNotAccount() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = 50l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = new BankAccount(0l, "auser", sourceFunds, LocalTimestamp.now());
+      BankAccount dest = db.openAccount("buser", destFunds);
+      assertThrows(AccountDoesNotExist.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferDestNotAccount() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = 50l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccount dest = new BankAccount(0l, "buser", destFunds, LocalTimestamp.now());
+      assertThrows(AccountDoesNotExist.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testRecordTransferBothNotAccount() throws Exception {
+    long sourceFunds = 1000l, destFunds = 100l, transferAmount = 50l;
+    BankDB db = BankDB.getMemoryInstance();
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = new BankAccount(-1l, "auser", sourceFunds, LocalTimestamp.now());
+      BankAccount dest = new BankAccount(-2l, "buser", destFunds, LocalTimestamp.now());
+      assertThrows(AccountDoesNotExist.class, () -> {
+        TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      });
+    } finally {
+      conn.rollback();
+    }
   }
 }

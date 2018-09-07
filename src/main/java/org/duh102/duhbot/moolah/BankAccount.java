@@ -17,6 +17,21 @@ public class BankAccount {
     if( this.balance < 0l )
       throw new ImproperBalanceAmount(this.balance);
   }
+  public BankAccount(BankAccount toCopy) throws ImproperBalanceAmount {
+    this.uid = toCopy.uid;
+    this.user = toCopy.user;
+    this.balance = toCopy.balance;
+    this.lastMined = toCopy.lastMined;
+  }
+  public BankAccount revertTo(BankAccount copy) throws ImproperBalanceAmount {
+    if( copy.balance < 0l )
+      throw new ImproperBalanceAmount(copy.balance);
+    this.uid = copy.uid;
+    this.user = copy.user;
+    this.balance = copy.balance;
+    this.lastMined = copy.lastMined;
+    return this;
+  }
 
   public BankAccount addFunds(long bal) throws ImproperBalanceAmount {
     if( bal < 0l )

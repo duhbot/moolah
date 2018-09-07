@@ -1,6 +1,6 @@
 package org.duh102.duhbot.moolah;
 
-import java.sql.Timestamp;
+import java.sql.*;
 
 import org.duh102.duhbot.moolah.exceptions.*;
 
@@ -35,9 +35,8 @@ public class MineRecord {
   public static MineRecord mineAttempt(BankAccount account) throws MineAttemptTooSoon {
     Timestamp now = LocalTimestamp.now();
     long timeSinceLastMine = now.getTime() - account.lastMined.getTime();
-    if( timeSinceLastMine < MINE_CHUNK_LENGTH ) {
+    if( timeSinceLastMine < MINE_CHUNK_LENGTH )
       throw new MineAttemptTooSoon("30 minutes"); //keep this synched up as an english rep of MINE_CHUNK_LENGTH
-    }
     double richness = Mine.getMine().getRichness();
     //use only the chunks we've fully "generated", discard partials
     int chunks = (int)Math.max(1, Math.min(MAX_CHUNKS, Math.floor(timeSinceLastMine / (double)MINE_CHUNK_LENGTH)));
@@ -49,6 +48,30 @@ public class MineRecord {
       iba.printStackTrace();
     }
     return new MineRecord(0l, account.uid, chunks, richness, payout, now);
+  }
+
+  public static MineRecord recordMineAttempt(BankDB db, BankAccount account) throws MineAttemptTooSoon, RecordFailure, AccountDoesNotExist {
+    synchronized(db) {
+      BankAccount preAttempt = null;
+      try {
+        preAttempt = new BankAccount(account);
+      } catch( ImproperBalanceAmount iba ) {
+        iba.printStackTrace();
+      }
+      try {
+        MineRecord record = mineAttempt(account);
+        Connection conn = db.getDBConnection();
+        db.pushAccount(account);
+        return db.recordMineOutcome(record);
+      } catch( RecordFailure | AccountDoesNotExist e ) {
+        try {
+          account.revertTo(preAttempt);
+        } catch( ImproperBalanceAmount iba ) {
+          iba.printStackTrace();
+        }
+        throw e;
+      }
+    }
   }
 
   public String toString() {
