@@ -17,7 +17,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
   public static final String messagePrefix = String.format("[%s] ", currSymbol);
   public static final String commandPrefix = ".bank", balanceComm = "balance",
          transferComm = "transfer", slotsComm = "slots", hiLoComm = "hilo",
-         mineComm = "mine";
+         mineComm = "mine", openComm = "open";
 
   BankDB db;
   boolean disconnected = false; //if disconnected we should assume we're testing
@@ -63,7 +63,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
   }
 
   public static void replyInsufficientFunds(MessageEvent event, BankAccount acct, long required) {
-    respondEvent(event, String.format("You have insufficient funds to complete that transaction; you have %1$s%,d, you need %1$s%,d", currSymbol, acct.balance, required));
+    respondEvent(event, String.format("You have insufficient funds to complete that transaction; you have %1$s%2$,d, you need %1$s%3$,d", currSymbol, acct.balance, required));
   }
 
   public static void replyNoAccount(MessageEvent event, String username) {
@@ -90,9 +90,9 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 			}
 		} catch (InterruptedException ex) {
 			throw new RuntimeException("Couldn't finish querying user for verified status", ex);
-		} 
+		}
   }
-  
+
   static String message, subCommand;
   static String[] commandParts, arguments;
   public void onMessage(MessageEvent event) {
@@ -109,6 +109,9 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       replyUseHelp(event);
     subCommand = commandParts[1];
     switch(subCommand) {
+      case openComm:
+        doOpen(event);
+        break;
       case mineComm:
         doMine(event);
         break;
@@ -129,12 +132,39 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     }
   }
 
-  public void doMine(MessageEvent event) {
+
+
+
+  public void doOpen(MessageEvent event) {
+    String username = null;
+    try {
+      username = getUserReg(event.getUser());
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+      return;
+    }
   }
+
+
+
+  public void doMine(MessageEvent event) {
+    String username = null;
+    try {
+      username = getUserReg(event.getUser());
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+      return;
+    }
+  }
+
+
+
   public void doBalance(MessageEvent event, String[] arguments) {
     String username;
     if( arguments.length > 0 )
-      username = arguments[1];
+      username = arguments[0];
     else {
       try {
         username = getUserReg(event.getUser());
@@ -157,23 +187,62 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     }
     replyBalance(event, account);
   }
+
+
+
   public void doTransfer(MessageEvent event, String[] arguments) {
+    String username = null;
+    try {
+      username = getUserReg(event.getUser());
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+      return;
+    }
   }
+
+
+
   public void doSlots(MessageEvent event, String[] arguments) {
+    String username = null;
+    try {
+      username = getUserReg(event.getUser());
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+      return;
+    }
   }
+
+
+
+
   public void doHiLo(MessageEvent event, String[] arguments) {
+    String username = null;
+    try {
+      username = getUserReg(event.getUser());
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+      return;
+    }
   }
-  
+
+
+
+
+
+
   public HashMap<String,String> getHelpFunctions() {
     HashMap<String,String> helpFunctions = new HashMap<String,String>();
     helpFunctions.put(".bank", "Main command");
     return helpFunctions;
   }
-  
+
   public String getPluginName() {
     return "Moolah Plugin";
   }
-  
+
   public ListenerAdapter getAdapter() {
     return this;
   }
