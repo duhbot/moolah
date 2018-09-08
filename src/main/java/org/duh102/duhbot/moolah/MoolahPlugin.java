@@ -70,6 +70,46 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     respondEvent(event, String.format("User '%s' does not have a registered bank account", username));
   }
 
+  public static void replyAccountAlreadyExists(MessageEvent event, String username) {
+    respondEvent(event, String.format("A registered bank account for user '%s' already exists", username));
+  }
+
+  public static void replyMineTooSoon(MessageEvent event) {
+    respondEvent(event, String.format("Mine attempt too soon, wait at least half an hour between attempts"));
+  }
+
+  public static void replyMineAttempt(MessageEvent event, BankAccount account, MineRecord record) {
+    respondEvent(event, String.format("You mined %,d %s, you now have %s%,d", record.yield, currFull, currSymbol, account.balance));
+  }
+
+  public static void replyAccountOpened(MessageEvent event, BankAccount acct) {
+    respondEvent(event, String.format("Bank account opened for user '%s'", acct.user));
+  }
+
+  public static void replyTransfer(MessageEvent event, BankAccount source, BankAccount dest, TransferRecord record) {
+    respondEvent(event,
+        String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s; %2$s now at %1$s%5$,d and %3$s at %1$s%6$,d",
+          currSymbol, source.user, dest.user, record.amount, source.balance, dest.balance
+        )
+    );
+  }
+
+  public static void replyTransferArgumentError(MessageEvent event) {
+    respondEvent(event, String.format("Invalid command, usage: %s %s [destination] [amount]", commandPrefix, transferComm));
+  }
+
+  public static void replyTransferInvalidAmount(MessageEvent event, String amountStr) {
+    respondEvent(event, String.format("Invalid amount, must be a positive integer: %s", amountStr));
+  }
+
+  public static void replyTransferInvalidAmount(MessageEvent event, long amount) {
+    respondEvent(event, String.format("Invalid amount, must be a positive integer: %,d", amount));
+  }
+
+  public static void replyTransferSameAccount(MessageEvent event, BankAccount account) {
+    respondEvent(event, String.format("Cannot transfer money between the same account: %s", account.user));
+  }
+
   public static void respondEvent(MessageEvent event, String message) {
     event.respond(messagePrefix + message);
   }
@@ -139,10 +179,16 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     String username = null;
     try {
       username = getUserReg(event.getUser());
+      BankAccount acct = db.openAccount(username);
+      replyAccountOpened(event, acct);
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
-      return;
+    } catch( RecordFailure rf ) {
+      replyDBError(event);
+      rf.printStackTrace();
+    } catch( AccountAlreadyExists aae ) {
+      replyAccountAlreadyExists(event, username);
     }
   }
 
@@ -152,10 +198,19 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     String username = null;
     try {
       username = getUserReg(event.getUser());
+      BankAccount account = db.getAccountExcept(username);
+      MineRecord record = MineRecord.recordMineAttempt(db, account);
+      replyMineAttempt(event, account, record);
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
-      return;
+    } catch( AccountDoesNotExist adne ) {
+      replyNoAccount(event, username);
+    } catch( RecordFailure rf ) {
+      replyDBError(event);
+      rf.printStackTrace();
+    } catch( MineAttemptTooSoon mats ) {
+      replyMineTooSoon(event);
     }
   }
 
@@ -174,30 +229,50 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
         return;
       }
     }
-    BankAccount account;
     try {
-      account = db.getAccountExcept(username);
+      BankAccount account = db.getAccountExcept(username);
+      replyBalance(event, account);
     } catch( AccountDoesNotExist adne ) {
       replyNoAccount(event, username);
-      return;
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
-      return;
     }
-    replyBalance(event, account);
   }
 
 
 
   public void doTransfer(MessageEvent event, String[] arguments) {
-    String username = null;
+    String destName = null;
+    long transferAmount = 0;
+    String sourceName = null;
+    BankAccount source = null, dest = null;
     try {
-      username = getUserReg(event.getUser());
+      destName = arguments[0];
+      transferAmount = Long.parseLong(arguments[1]);
+      sourceName = getUserReg(event.getUser());
+      source = db.getAccountExcept(sourceName);
+      dest = db.getAccountExcept(destName);
+      TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      replyTransfer(event, source, dest, record);
+    } catch( ArrayIndexOutOfBoundsException oob ) {
+      replyTransferArgumentError(event);
+    } catch( NumberFormatException nfe ) {
+      replyTransferInvalidAmount(event, arguments[1]);
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
-      return;
+    } catch( RecordFailure rf ) {
+      replyDBError(event);
+      rf.printStackTrace();
+    } catch( AccountDoesNotExist adne ) {
+      replyNoAccount(event, adne.getMessage());
+    } catch( ImproperBalanceAmount iba ) {
+      replyTransferInvalidAmount(event, transferAmount);
+    } catch( InsufficientFundsException ife ) {
+      replyInsufficientFunds(event, source, transferAmount);
+    } catch( SameAccountException sae ) {
+      replyTransferSameAccount(event, source);
     }
   }
 
