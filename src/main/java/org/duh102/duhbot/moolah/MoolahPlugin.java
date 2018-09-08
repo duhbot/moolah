@@ -4,6 +4,7 @@ import java.util.*;
 
 import org.pircbotx.Colors;
 import org.pircbotx.User;
+import org.pircbotx.Channel;
 import org.pircbotx.hooks.*;
 import org.pircbotx.hooks.events.*;
 
@@ -88,9 +89,8 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   public static void replyTransfer(MessageEvent event, BankAccount source, BankAccount dest, TransferRecord record) {
     respondEvent(event,
-        String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s; %2$s now at %1$s%5$,d and %3$s at %1$s%6$,d",
-          currSymbol, source.user, dest.user, record.amount, source.balance, dest.balance
-        )
+        String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s; %2$s at %1$s%5$,d and %3$s at %1$s%6$,d",
+          currSymbol, source.user, dest.user, record.amount, source.balance, dest.balance)
     );
   }
 
@@ -155,23 +155,8 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     event.respond(messagePrefix + message);
   }
 
-  public String getUserReg (User user) {
-    if( disconnected )
-      return user.getNick();
-		try {
-			user.send().whoisDetail();
-			WaitForQueue waitForQueue = new WaitForQueue(user.getBot());
-			while (true) {
-				WhoisEvent event = waitForQueue.waitFor(WhoisEvent.class);
-				if (!event.getRegisteredAs().equals(user.getNick()))
-					continue;
-				//Got our event
-				waitForQueue.close();
-				return event.getRegisteredAs();
-			}
-		} catch (InterruptedException ex) {
-			throw new RuntimeException("Couldn't finish querying user for verified status", ex);
-		}
+  public String getUserReg (Channel channel, User user) {
+    return channel.getNormalUsers().contains(user)?null:user.getNick().toLowerCase();
   }
 
   static String message, subCommand;
@@ -222,7 +207,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     String username = null;
     BankAccount acct = null;
     try {
-      username = getUserReg(event.getUser());
+      username = getUserReg(event.getChannel(), event.getUser());
       acct = db.openAccount(username);
       replyAccountOpened(event, acct);
     } catch( RuntimeException re ) {
@@ -243,7 +228,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     String username = null;
     MineRecord record = null;
     try {
-      username = getUserReg(event.getUser());
+      username = getUserReg(event.getChannel(), event.getUser());
       BankAccount account = db.getAccountExcept(username);
       record = MineRecord.recordMineAttempt(db, account);
       replyMineAttempt(event, account, record);
@@ -269,7 +254,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       username = arguments[0];
     else {
       try {
-        username = getUserReg(event.getUser());
+        username = getUserReg(event.getChannel(), event.getUser());
       } catch( RuntimeException re ) {
         re.printStackTrace();
         replyGenericError(event);
@@ -298,7 +283,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     try {
       destName = arguments[0];
       transferAmount = Long.parseLong(arguments[1]);
-      sourceName = getUserReg(event.getUser());
+      sourceName = getUserReg(event.getChannel(), event.getUser());
       source = db.getAccountExcept(sourceName);
       dest = db.getAccountExcept(destName);
       record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
@@ -334,7 +319,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     SlotRecord record = null;
     try {
       wager = Long.parseLong(arguments[0]);
-      username = getUserReg(event.getUser());
+      username = getUserReg(event.getChannel(), event.getUser());
       acct = db.getAccountExcept(username);
       record = SlotRecord.recordSlotAttempt(db, acct, wager);
       replySlots(event, acct, record);
@@ -370,7 +355,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     try {
       type = HiLoBetType.fromString(arguments[0]);
       wager = Long.parseLong(arguments[1]);
-      username = getUserReg(event.getUser());
+      username = getUserReg(event.getChannel(), event.getUser());
       acct = db.getAccountExcept(username);
       record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
       replyHiLo(event, acct, record);

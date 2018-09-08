@@ -148,7 +148,7 @@ class MoolahPluginTest {
     String response = event.getResponse();
     assertTrue(response.length() > 0);
     assertContains(response, MoolahPlugin.messagePrefix);
-    assertContains(response, username);
+    assertContains(response.toLowerCase(), username.toLowerCase());
     assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, balance));
   }
   @Test
@@ -174,7 +174,7 @@ class MoolahPluginTest {
     assertContains(response, MoolahPlugin.messagePrefix);
     assertContains(response.toLowerCase(), "does not have");
     assertContains(response.toLowerCase(), "bank account");
-    assertContains(response, username);
+    assertContains(response.toLowerCase(), username.toLowerCase());
   }
 
   /*
@@ -201,7 +201,7 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, bal));
     } finally {
       conn.rollback();
@@ -224,7 +224,7 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, bal));
     } finally {
       conn.rollback();
@@ -247,7 +247,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -269,7 +269,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -365,7 +365,7 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "account opened");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -385,7 +385,7 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
       assertContains(response.toLowerCase(), "already exists");
     } finally {
       conn.rollback();
@@ -415,11 +415,11 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, String.format("%s transferred", username1));
+      assertContains(response, String.format("%s transferred", username1.toLowerCase()));
       assertEquals(initialBal1 - transfer, source.balance);
       assertEquals(initialBal2 + transfer, dest.balance);
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, transfer));
-      assertContains(response, String.format("to %s", username2));
+      assertContains(response, String.format("to %s", username2.toLowerCase()));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal1-transfer));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal2+transfer));
     } finally {
@@ -564,7 +564,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username2);
+      assertContains(response.toLowerCase(), username2.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -588,7 +588,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username1);
+      assertContains(response.toLowerCase(), username1.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -611,7 +611,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username1);
+      assertContains(response.toLowerCase(), username1.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -779,7 +779,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -1062,7 +1062,7 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -1089,7 +1089,7 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, bal));
     } finally {
       conn.rollback();
@@ -1141,7 +1141,7 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "account opened");
-      assertContains(response, username);
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -1168,11 +1168,11 @@ class MoolahPluginTest {
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, String.format("%s transferred", username1));
+      assertContains(response, String.format("%s transferred", username1.toLowerCase()));
       assertEquals(initialBal1 - transfer, source.balance);
       assertEquals(initialBal2 + transfer, dest.balance);
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, transfer));
-      assertContains(response, String.format("to %s", username2));
+      assertContains(response, String.format("to %s", username2.toLowerCase()));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal1-transfer));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal2+transfer));
     } finally {

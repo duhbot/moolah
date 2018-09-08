@@ -113,7 +113,7 @@ public class BankDB {
 
     try {
       PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user, balance) VALUES (?, ?);", Statement.RETURN_GENERATED_KEYS);
-      stat.setString(1, user);
+      stat.setString(1, user.toLowerCase());
       stat.setLong(2, balance);
       stat.executeUpdate();
       ResultSet rs = stat.getGeneratedKeys();
@@ -147,7 +147,7 @@ public class BankDB {
     BankAccount account = null;
     try {
       PreparedStatement stat = conn.prepareStatement("SELECT uid, balance, lastMined FROM bankAccount where user = ? LIMIT 1;");
-      stat.setString(1, user);
+      stat.setString(1, user.toLowerCase());
       ResultSet rs = stat.executeQuery();
       while (rs.next()) {
         long uid = rs.getLong("uid");
@@ -160,7 +160,7 @@ public class BankDB {
           lastMined = LocalTimestamp.now();
         }
         try {
-          account = new BankAccount(uid, user, balance, lastMined);
+          account = new BankAccount(uid, user.toLowerCase(), balance, lastMined);
         } catch( ImproperBalanceAmount iba ) {
           //this should never happen, since we're grabbing from the database
           throw new RecordFailure(iba);
