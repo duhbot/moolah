@@ -1,6 +1,7 @@
 package org.duh102.duhbot.moolah;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.pircbotx.Colors;
 import org.pircbotx.User;
@@ -19,6 +20,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
   public static final String commandPrefix = ".bank", balanceComm = "balance",
          transferComm = "transfer", slotsComm = "slots", hiLoComm = "hilo",
          mineComm = "mine", openComm = "open";
+  public static final String strRateLimit = "5 minutes";
+  public static final long rateLimit = 5*60*1000;
+  public static ConcurrentHashMap<String, Long> antiSpamMapSlots = new ConcurrentHashMap<String, Long>();
+  public static ConcurrentHashMap<String, Long> antiSpamMapHiLo = new ConcurrentHashMap<String, Long>();
 
   BankDB db;
   boolean disconnected = false; //if disconnected we should assume we're testing
@@ -53,6 +58,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   public static void replyUseHelp(MessageEvent event) {
     respondEvent(event, String.format("%s cannot be used alone, see help for valid subcommands", commandPrefix));
+  }
+
+  public static void replyTooSoon(MessageEvent event, String command) {
+    respondEvent(event, String.format("Unable to use %s so soon, please wait at least %s", command, strRateLimit));
   }
 
   public static void replyUnknownCommand(MessageEvent event, String command) {
@@ -321,8 +330,15 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       wager = Long.parseLong(arguments[0]);
       username = getUserReg(event.getChannel(), event.getUser());
       acct = db.getAccountExcept(username);
+      Long lastUsed = antiSpamMapSlots.get(acct.user);
+      Long now = System.currentTimeMillis();
+      if( lastUsed != null && lastUsed >= now-rateLimit ) {
+        replyTooSoon(event, slotsComm);
+        return null;
+      }
       record = SlotRecord.recordSlotAttempt(db, acct, wager);
       replySlots(event, acct, record);
+      antiSpamMapSlots.put(acct.user, now);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replySlotsArgumentError(event);
     } catch( NumberFormatException nfe ) {
@@ -357,8 +373,15 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       wager = Long.parseLong(arguments[1]);
       username = getUserReg(event.getChannel(), event.getUser());
       acct = db.getAccountExcept(username);
+      Long lastUsed = antiSpamMapHiLo.get(acct.user);
+      Long now = System.currentTimeMillis();
+      if( lastUsed != null && lastUsed >= now-rateLimit ) {
+        replyTooSoon(event, hiLoComm);
+        return null;
+      }
       record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
       replyHiLo(event, acct, record);
+      antiSpamMapHiLo.put(acct.user, now);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replyHiLoArgumentError(event);
     } catch( InvalidInputError iie ) {

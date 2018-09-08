@@ -655,6 +655,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       SlotRecord record = plugin.doSlots(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -681,6 +682,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.doSlots(event, arguments);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
@@ -705,6 +707,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.doSlots(event, arguments);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
@@ -727,6 +730,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.doSlots(event, arguments);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
@@ -749,6 +753,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.doSlots(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -773,6 +778,7 @@ class MoolahPluginTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.doSlots(event, arguments);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
@@ -801,6 +807,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -830,6 +837,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -859,6 +867,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -888,6 +897,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -914,6 +924,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -937,6 +948,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -963,6 +975,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -986,6 +999,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -1009,6 +1023,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -1034,6 +1049,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
@@ -1057,6 +1073,7 @@ class MoolahPluginTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
+      MoolahPlugin.antiSpamMapHiLo.clear();
       HiLoRecord record = plugin.doHiLo(event, arguments);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
@@ -1193,6 +1210,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
       plugin.onMessage(event);
       SlotRecord record = (SlotRecord)plugin.lastHandled;
       acct = db.getAccountExcept(acct.uid);
@@ -1203,6 +1221,42 @@ class MoolahPluginTest {
       assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
       assertContains(response, record.getImagesString());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsOnMessageTooSoon() throws Exception {
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal/4;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.slotsComm, wager)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
+      plugin.onMessage(event);
+      SlotRecord record = (SlotRecord)plugin.lastHandled;
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response, record.getImagesString());
+      plugin.onMessage(event);
+      acct = db.getAccountExcept(acct.uid);
+      response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "please wait");
+      assertContains(response.toLowerCase(), MoolahPlugin.slotsComm.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -1221,6 +1275,7 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
       plugin.onMessage(event);
       HiLoRecord record = (HiLoRecord)plugin.lastHandled;
       acct = db.getAccountExcept(acct.uid);
@@ -1234,6 +1289,45 @@ class MoolahPluginTest {
       assertContains(response, String.format("%d", record.resultInt));
       assertContains(response, String.format("%d", HiLoRecord.MID));
       assertContains(response, (record.payout > 0)?"<":">=");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testHiLoLowOnMessageTooSoon() throws Exception {
+    String username = fakeUser1.getNick(), type = "low";
+    long initialBal = 123484l, wager = initialBal/4;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.hiLoComm, type, wager)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
+      plugin.onMessage(event);
+      HiLoRecord record = (HiLoRecord)plugin.lastHandled;
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response.toLowerCase(), type.toLowerCase());
+      assertContains(response, String.format("%d", record.resultInt));
+      assertContains(response, String.format("%d", HiLoRecord.MID));
+      assertContains(response, (record.payout > 0)?"<":">=");
+      plugin.onMessage(event);
+      acct = db.getAccountExcept(acct.uid);
+      response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "please wait");
+      assertContains(response.toLowerCase(), MoolahPlugin.hiLoComm.toLowerCase());
     } finally {
       conn.rollback();
     }
