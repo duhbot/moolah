@@ -122,6 +122,35 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     respondEvent(event, String.format("Invalid command, usage: %s %s [wager]", commandPrefix, slotsComm));
   }
 
+  public static void replyHiLo(MessageEvent event, BankAccount acct, HiLoRecord record) {
+    boolean won = record.payout > 0l;
+    String comparison = "<>";
+    switch(record.hiLo) {
+      case HIGH:
+        comparison = won?">":"<=";
+        break;
+      case LOW:
+        comparison = won?"<":">=";
+        break;
+      case EQUAL:
+        comparison = won?"==":"!=";
+    }
+    respondEvent(event,
+        String.format("HiLo %8$s outcome: %2$d%3$s%4$d, %5$.2fx payout (%1$s%6$,d), your balance now %1$s%7$,d",
+          currSymbol, record.resultInt, comparison, HiLoRecord.MID, record.multiplier,
+          record.payout, acct.balance, record.hiLo.toString().toLowerCase()
+        )
+    );
+  }
+
+  public static void replyHiLoArgumentError(MessageEvent event) {
+    respondEvent(event, String.format("Invalid command, usage: %s %s [h(igh)|l(ow)|e(qual)] [wager]", commandPrefix, hiLoComm));
+  }
+
+  public static void replyHiLoTypeError(MessageEvent event, String type) {
+    respondEvent(event, String.format("Invalid HiLo type, must be [h(igh)|l(ow)|e(qual)]", type));
+  }
+
   public static void respondEvent(MessageEvent event, String message) {
     event.respond(messagePrefix + message);
   }
@@ -331,13 +360,36 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
   public HiLoRecord doHiLo(MessageEvent event, String[] arguments) {
+    long wager = 0;
+    HiLoBetType type = null;
     String username = null;
+    BankAccount acct = null;
     HiLoRecord record = null;
     try {
+      type = HiLoBetType.fromString(arguments[0]);
+      wager = Long.parseLong(arguments[1]);
       username = getUserReg(event.getUser());
+      acct = db.getAccountExcept(username);
+      record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
+      replyHiLo(event, acct, record);
+    } catch( ArrayIndexOutOfBoundsException oob ) {
+      replyHiLoArgumentError(event);
+    } catch( InvalidInputError iie ) {
+      replyHiLoTypeError(event, arguments[0]);
+    } catch( NumberFormatException nfe ) {
+      replyInvalidAmount(event, arguments[1]);
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
+    } catch( RecordFailure rf ) {
+      replyDBError(event);
+      rf.printStackTrace();
+    } catch( AccountDoesNotExist adne ) {
+      replyNoAccount(event, adne.getMessage());
+    } catch( ImproperBalanceAmount iba ) {
+      replyInvalidAmount(event, wager);
+    } catch( InsufficientFundsException ife ) {
+      replyInsufficientFunds(event, acct, wager);
     }
     return record;
   }
