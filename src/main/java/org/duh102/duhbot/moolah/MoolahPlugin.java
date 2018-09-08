@@ -411,7 +411,17 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   public HashMap<String,String> getHelpFunctions() {
     HashMap<String,String> helpFunctions = new HashMap<String,String>();
-    helpFunctions.put(".bank", "Main command");
+    helpFunctions.put(String.format("%s %s", commandPrefix, openComm), "Open an account, uses your nick as the account name, max one per user");
+    helpFunctions.put(String.format("%s %s", commandPrefix, balanceComm), "Check your current balance");
+    helpFunctions.put(String.format("%s %s", commandPrefix, mineComm),
+        String.format("Hit the %1$s mines and mine some free %1$s based on how long since you last mined; max 24 hours", currFull));
+    helpFunctions.put(String.format("%s %s [destination] [amount]", commandPrefix, transferComm),
+        "Transfer [amount] of money from your account to [destination] account");
+    helpFunctions.put(String.format("%s %s [wager]", commandPrefix, slotsComm),
+        "Gamble [wager] on the outcome of a 3-reel slot machine. See https://github.com/duhbot/moolah/blob/master/doc/design.md for payout calculations");
+    helpFunctions.put(String.format("%s %s [h(igh)|l(ow)|e(qual)] [wager]", commandPrefix, hiLoComm),
+        String.format("Gamble [wager] on the outcome of choosing a random number between %d and %d; pays based on whether the result is higher, lower, or equal to %d",
+          HiLoRecord.MIN, HiLoRecord.MAX, HiLoRecord.MID));
     return helpFunctions;
   }
 
