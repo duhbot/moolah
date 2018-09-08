@@ -89,7 +89,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   public static void replyTransfer(MessageEvent event, BankAccount source, BankAccount dest, TransferRecord record) {
     respondEvent(event,
-        String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s; %2$s at %1$s%5$,d and %3$s at %1$s%6$,d",
+        String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s, %2$s now has %1$s%5$,d and %3$s now has %1$s%6$,d",
           currSymbol, source.user, dest.user, record.amount, source.balance, dest.balance)
     );
   }
