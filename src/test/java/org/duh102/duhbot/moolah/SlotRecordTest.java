@@ -51,6 +51,20 @@ class SlotRecordTest {
     assertEquals(expected, SlotRecord.getRegexString(images));
   }
   @Test
+  public void testInstanceGetSlotImagesSymmetric() throws Exception {
+    SlotReelImage[] images = new SlotReelImage[] {CH, DO, SE, FI, BE, LE, SE, BA};
+    SlotRecord toTest = new SlotRecord(0l, 0l, images, 0l, 0l, 0.0, null);
+    assertArrayEquals(images, SlotRecord.getSlotImages(toTest.getRegexString()));
+  }
+  @Test
+  public void testInstanceGetRegexString() throws Exception {
+    SlotReelImage[] images = new SlotReelImage[] {CH, DO, SE, FI, BE, LE, SE, BA};
+  String expected = CH.toRegexChar() + DO.toRegexChar() + SE.toRegexChar()
+    + FI.toRegexChar() + BE.toRegexChar() + LE.toRegexChar() + SE.toRegexChar() + BA.toRegexChar();
+    SlotRecord toTest = new SlotRecord(0l, 0l, images, 0l, 0l, 0.0, null);
+    assertEquals(expected, toTest.getRegexString());
+  }
+  @Test
   public void testGetImagesString() throws Exception {
     SlotReelImage[] images = new SlotReelImage[] {CH, DO, SE, FI, BE, LE, SE, BA};
   String expected = CH.toString() + DO.toString() + SE.toString()

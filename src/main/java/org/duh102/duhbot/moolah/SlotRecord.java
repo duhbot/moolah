@@ -44,6 +44,12 @@ public class SlotRecord {
     this.multiplier = multiplier;
     this.timestamp = timestamp;
   }
+  public String getImagesString() {
+    return getImagesString(slotImages);
+  }
+  public String getRegexString() {
+    return getRegexString(slotImages);
+  }
 
   public static void setSeed(long seed) {
     rand.setSeed(seed);

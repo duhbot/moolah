@@ -300,13 +300,13 @@ class MoolahPluginTest {
     conn.setAutoCommit(false);
     try {
       BankAccount acct = db.openAccount(username, initialBal);
-      plugin.doMine(event);
+      MineRecord record = plugin.doMine(event);
       acct = db.getAccountExcept(acct.uid);
       String response = event.getResponse();
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "mined");
-      assertContains(response, String.format("%,d %s", acct.balance - initialBal, MoolahPlugin.currFull));
+      assertContains(response, String.format("%,d %s", record.yield, MoolahPlugin.currFull));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
     } finally {
       conn.rollback();
@@ -524,6 +524,7 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "insufficient funds");
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal1));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, transfer));
     } finally {
       conn.rollback();
     }
@@ -643,6 +644,152 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "same account");
+    } finally {
+      conn.rollback();
+    }
+  }
+
+  /*
+   * Slot machine
+   */
+  @Test
+  public void testSlots() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal/4;
+    String[] arguments = new String[]{String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      SlotRecord record = plugin.doSlots(event, arguments);
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response, record.getImagesString());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsNoWager() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l;
+    String[] arguments = new String[]{};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.doSlots(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, MoolahPlugin.commandPrefix);
+      assertContains(response, MoolahPlugin.slotsComm);
+      assertContains(response, "[wager]");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsNegativeWager() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = -100l;
+    String[] arguments = new String[]{String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.doSlots(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "invalid");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsTextWager() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l;
+    String[] arguments = new String[]{"asdf"};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.doSlots(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "invalid");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsInsufficientFunds() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal+2;
+    String[] arguments = new String[]{String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.doSlots(event, arguments);
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "insufficient funds");
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, wager));
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsNoAccount() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal/4;
+    String[] arguments = new String[]{String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      plugin.doSlots(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "does not have");
+      assertContains(response.toLowerCase(), "bank account");
+      assertContains(response, username);
     } finally {
       conn.rollback();
     }

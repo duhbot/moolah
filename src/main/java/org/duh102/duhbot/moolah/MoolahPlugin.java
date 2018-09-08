@@ -98,16 +98,28 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     respondEvent(event, String.format("Invalid command, usage: %s %s [destination] [amount]", commandPrefix, transferComm));
   }
 
-  public static void replyTransferInvalidAmount(MessageEvent event, String amountStr) {
+  public static void replyInvalidAmount(MessageEvent event, String amountStr) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %s", amountStr));
   }
 
-  public static void replyTransferInvalidAmount(MessageEvent event, long amount) {
+  public static void replyInvalidAmount(MessageEvent event, long amount) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %,d", amount));
   }
 
   public static void replyTransferSameAccount(MessageEvent event, BankAccount account) {
     respondEvent(event, String.format("Cannot transfer money between the same account: %s", account.user));
+  }
+
+  public static void replySlots(MessageEvent event, BankAccount acct, SlotRecord record) {
+    respondEvent(event,
+        String.format("Slots outcome: %2$s, %3$.2fx payout (%1$s%4$,d), your balance now %1$s%5$,d",
+          currSymbol, record.getImagesString(), record.multiplier, record.payout, acct.balance
+        )
+    );
+  }
+
+  public static void replySlotsArgumentError(MessageEvent event) {
+    respondEvent(event, String.format("Invalid command, usage: %s %s [wager]", commandPrefix, slotsComm));
   }
 
   public static void respondEvent(MessageEvent event, String message) {
@@ -175,11 +187,12 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public void doOpen(MessageEvent event) {
+  public BankAccount doOpen(MessageEvent event) {
     String username = null;
+    BankAccount acct = null;
     try {
       username = getUserReg(event.getUser());
-      BankAccount acct = db.openAccount(username);
+      acct = db.openAccount(username);
       replyAccountOpened(event, acct);
     } catch( RuntimeException re ) {
       re.printStackTrace();
@@ -190,16 +203,18 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     } catch( AccountAlreadyExists aae ) {
       replyAccountAlreadyExists(event, username);
     }
+    return acct;
   }
 
 
 
-  public void doMine(MessageEvent event) {
+  public MineRecord doMine(MessageEvent event) {
     String username = null;
+    MineRecord record = null;
     try {
       username = getUserReg(event.getUser());
       BankAccount account = db.getAccountExcept(username);
-      MineRecord record = MineRecord.recordMineAttempt(db, account);
+      record = MineRecord.recordMineAttempt(db, account);
       replyMineAttempt(event, account, record);
     } catch( RuntimeException re ) {
       re.printStackTrace();
@@ -212,6 +227,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     } catch( MineAttemptTooSoon mats ) {
       replyMineTooSoon(event);
     }
+    return record;
   }
 
 
@@ -242,23 +258,24 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public void doTransfer(MessageEvent event, String[] arguments) {
+  public TransferRecord doTransfer(MessageEvent event, String[] arguments) {
     String destName = null;
     long transferAmount = 0;
     String sourceName = null;
     BankAccount source = null, dest = null;
+    TransferRecord record = null;
     try {
       destName = arguments[0];
       transferAmount = Long.parseLong(arguments[1]);
       sourceName = getUserReg(event.getUser());
       source = db.getAccountExcept(sourceName);
       dest = db.getAccountExcept(destName);
-      TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
+      record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       replyTransfer(event, source, dest, record);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replyTransferArgumentError(event);
     } catch( NumberFormatException nfe ) {
-      replyTransferInvalidAmount(event, arguments[1]);
+      replyInvalidAmount(event, arguments[1]);
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
@@ -268,39 +285,61 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     } catch( AccountDoesNotExist adne ) {
       replyNoAccount(event, adne.getMessage());
     } catch( ImproperBalanceAmount iba ) {
-      replyTransferInvalidAmount(event, transferAmount);
+      replyInvalidAmount(event, transferAmount);
     } catch( InsufficientFundsException ife ) {
       replyInsufficientFunds(event, source, transferAmount);
     } catch( SameAccountException sae ) {
       replyTransferSameAccount(event, source);
     }
+    return record;
   }
 
 
 
-  public void doSlots(MessageEvent event, String[] arguments) {
+  public SlotRecord doSlots(MessageEvent event, String[] arguments) {
+    long wager = 0;
     String username = null;
+    BankAccount acct = null;
+    SlotRecord record = null;
+    try {
+      wager = Long.parseLong(arguments[0]);
+      username = getUserReg(event.getUser());
+      acct = db.getAccountExcept(username);
+      record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      replySlots(event, acct, record);
+    } catch( ArrayIndexOutOfBoundsException oob ) {
+      replySlotsArgumentError(event);
+    } catch( NumberFormatException nfe ) {
+      replyInvalidAmount(event, arguments[0]);
+    } catch( RuntimeException re ) {
+      re.printStackTrace();
+      replyGenericError(event);
+    } catch( RecordFailure rf ) {
+      replyDBError(event);
+      rf.printStackTrace();
+    } catch( AccountDoesNotExist adne ) {
+      replyNoAccount(event, adne.getMessage());
+    } catch( ImproperBalanceAmount iba ) {
+      replyInvalidAmount(event, wager);
+    } catch( InsufficientFundsException ife ) {
+      replyInsufficientFunds(event, acct, wager);
+    }
+    return record;
+  }
+
+
+
+
+  public HiLoRecord doHiLo(MessageEvent event, String[] arguments) {
+    String username = null;
+    HiLoRecord record = null;
     try {
       username = getUserReg(event.getUser());
     } catch( RuntimeException re ) {
       re.printStackTrace();
       replyGenericError(event);
-      return;
     }
-  }
-
-
-
-
-  public void doHiLo(MessageEvent event, String[] arguments) {
-    String username = null;
-    try {
-      username = getUserReg(event.getUser());
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
-      return;
-    }
+    return record;
   }
 
 
