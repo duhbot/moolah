@@ -180,16 +180,6 @@ class MoolahPluginTest {
   /*
    * Database propagation and error checking
    */
-  @Test
-  public void test() throws Exception {
-    BankDB db = BankDB.getMemoryInstance();
-    Connection conn = db.getDBConnection();
-    conn.setAutoCommit(false);
-    try {
-    } finally {
-      conn.rollback();
-    }
-  }
 
   /*
    * Balance checking
@@ -1025,6 +1015,7 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "invalid");
+      assertContains(response, type);
       assertContains(response, "[h(igh)|l(ow)|e(qual)]");
     } finally {
       conn.rollback();
@@ -1072,6 +1063,177 @@ class MoolahPluginTest {
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
       assertContains(response, username);
+    } finally {
+      conn.rollback();
+    }
+  }
+
+  /*
+   * onMessage tests
+   */
+  @Test
+  public void testBalanceOnMessage() throws Exception {
+    String username = fakeUser1.getNick();
+    long bal = 102314l;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s", MoolahPlugin.commandPrefix, MoolahPlugin.balanceComm)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      db.openAccount(username, bal);
+      plugin.onMessage(event);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, username);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, bal));
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testMineOnMessage() throws Exception {
+    String username = fakeUser1.getNick();
+    long initialBal = 101l;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s", MoolahPlugin.commandPrefix, MoolahPlugin.mineComm)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.onMessage(event);
+      MineRecord record = (MineRecord)plugin.lastHandled;
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "mined");
+      assertContains(response, String.format("%,d %s", record.yield, MoolahPlugin.currFull));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testOpenOnMessage() throws Exception {
+    String username = fakeUser1.getNick();
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s", MoolahPlugin.commandPrefix, MoolahPlugin.openComm)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      plugin.onMessage(event);
+      BankAccount acct = db.getAccountExcept(username);
+      assertEquals(0l, acct.balance);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "account opened");
+      assertContains(response, username);
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testTransferOnMessage() throws Exception {
+    String username1 = fakeUser1.getNick(), username2 = fakeUser2.getNick();
+    long initialBal1 = 123484l, initialBal2 = 24587l, transfer = initialBal1/4;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.transferComm, username2, transfer
+        )
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount source = db.openAccount(username1, initialBal1);
+      BankAccount dest = db.openAccount(username2, initialBal2);
+      plugin.onMessage(event);
+      source = db.getAccountExcept(source.uid);
+      dest = db.getAccountExcept(dest.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s transferred", username1));
+      assertEquals(initialBal1 - transfer, source.balance);
+      assertEquals(initialBal2 + transfer, dest.balance);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, transfer));
+      assertContains(response, String.format("to %s", username2));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal1-transfer));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, initialBal2+transfer));
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsOnMessage() throws Exception {
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal/4;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.slotsComm, wager)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.onMessage(event);
+      SlotRecord record = (SlotRecord)plugin.lastHandled;
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response, record.getImagesString());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testHiLoLowOnMessage() throws Exception {
+    String username = fakeUser1.getNick(), type = "low";
+    long initialBal = 123484l, wager = initialBal/4;
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
+        String.format("%s %s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.hiLoComm, type, wager)
+    );
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      plugin.onMessage(event);
+      HiLoRecord record = (HiLoRecord)plugin.lastHandled;
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response.toLowerCase(), type.toLowerCase());
+      assertContains(response, String.format("%d", record.resultInt));
+      assertContains(response, String.format("%d", HiLoRecord.MID));
+      assertContains(response, (record.payout > 0)?"<":">=");
     } finally {
       conn.rollback();
     }

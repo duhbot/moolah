@@ -148,7 +148,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
   }
 
   public static void replyHiLoTypeError(MessageEvent event, String type) {
-    respondEvent(event, String.format("Invalid HiLo type, must be [h(igh)|l(ow)|e(qual)]", type));
+    respondEvent(event, String.format("Invalid HiLo type '%s', must be [h(igh)|l(ow)|e(qual)]", type));
   }
 
   public static void respondEvent(MessageEvent event, String message) {
@@ -176,7 +176,9 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   static String message, subCommand;
   static String[] commandParts, arguments;
+  public static Object lastHandled = null;
   public void onMessage(MessageEvent event) {
+    lastHandled = null;
     message = Colors.removeFormattingAndColors(event.getMessage()).trim();
     if( !message.startsWith(commandPrefix) )
       return;
@@ -185,29 +187,29 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       return;
     }
     commandParts = parseCommand(message);
-    arguments = Arrays.copyOfRange(commandParts, Math.min(3, commandParts.length), commandParts.length);
+    arguments = Arrays.copyOfRange(commandParts, Math.min(2, commandParts.length), commandParts.length);
     if( commandParts.length < 2 )
       replyUseHelp(event);
     subCommand = commandParts[1];
     switch(subCommand) {
       case openComm:
-        doOpen(event);
-        break;
+        lastHandled = (Object)doOpen(event);
+        return;
       case mineComm:
-        doMine(event);
-        break;
+        lastHandled = (Object)doMine(event);
+        return;
       case balanceComm:
         doBalance(event, arguments);
-        break;
+        return;
       case transferComm:
-        doTransfer(event, arguments);
-        break;
+        lastHandled = (Object)doTransfer(event, arguments);
+        return;
       case slotsComm:
-        doSlots(event, arguments);
-        break;
+        lastHandled = (Object)doSlots(event, arguments);
+        return;
       case hiLoComm:
-        doHiLo(event, arguments);
-        break;
+        lastHandled = (Object)doHiLo(event, arguments);
+        return;
       default:
         replyUnknownCommand(event, subCommand);
     }
