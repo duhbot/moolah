@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah;
 
+import java.util.HashMap;
 import java.sql.Connection;
 import java.io.IOException;
 
@@ -1522,5 +1523,15 @@ class MoolahPluginTest {
     } finally {
       conn.rollback();
     }
+  }
+
+  /*
+   * Help
+   */
+  @Test
+  public void testHelp() throws Exception {
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    HashMap<String,String> helpHash = plugin.getHelpFunctions();
   }
 }

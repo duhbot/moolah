@@ -408,17 +408,33 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
   public HashMap<String,String> getHelpFunctions() {
     HashMap<String,String> helpFunctions = new HashMap<String,String>();
-    helpFunctions.put(String.format("%s %s", commandPrefix, openComm), "Open an account, uses your nick as the account name, max one per user");
+    helpFunctions.put(String.format("%s %s", commandPrefix, openComm),
+        "Open an account, uses your nick as the account name, max one per user (must be registered with nickserv and have vop+ in current channel)"
+    );
     helpFunctions.put(String.format("%s %s", commandPrefix, balanceComm), "Check your current balance");
+    helpFunctions.put(String.format("%s %s [user]", commandPrefix, balanceComm), "Check someone else's current balance (does not require an account)");
     helpFunctions.put(String.format("%s %s", commandPrefix, mineComm),
-        String.format("Hit the %1$s mines and mine some free %1$s based on how long since you last mined; max 24 hours", currFull));
+        String.format("Hit the %1$s mines and mine some free %1$s based on how long since you last mined; max 24 hours",
+          currFull)
+    );
     helpFunctions.put(String.format("%s %s [destination] [amount]", commandPrefix, transferComm),
         "Transfer [amount] of money from your account to [destination] account");
     helpFunctions.put(String.format("%s %s [wager]", commandPrefix, slotsComm),
-        "Gamble [wager] on the outcome of a 3-reel slot machine. See https://github.com/duhbot/moolah/blob/master/doc/design.md for payout calculations");
+        "Gamble [wager] on the outcome of a 3-reel slot machine. See https://github.com/duhbot/moolah/blob/master/doc/design.md for payout calculations"
+    );
     helpFunctions.put(String.format("%s %s [h(igh)|l(ow)|e(qual)] [wager]", commandPrefix, hiLoComm),
         String.format("Gamble [wager] on the outcome of choosing a random number between %d and %d; pays based on whether the result is higher, lower, or equal to %d",
-          HiLoRecord.MIN, HiLoRecord.MAX, HiLoRecord.MID));
+          HiLoRecord.MIN, HiLoRecord.MAX, HiLoRecord.MID)
+    );
+    helpFunctions.put("(hi/lo payouts)",
+        String.format("High: %.2fx | Equal: %.2f | Low: %.2f",
+          HiLoBetType.HIGH.getMultiplier(), HiLoBetType.EQUAL.getMultiplier(), HiLoBetType.LOW.getMultiplier())
+    );
+    helpFunctions.put("(slots payouts)",
+        String.format("Any bars: %.2fx | All bars: %.2f | Per-7 bonus: %.2f | All 7s: %.2f | Two symbols: %.2f | Three symbols: %.2f | Symbol bonuses: $5 %.2f, %s%s %.2f, %s %.2f",
+          0.0, SlotRecord.BAR_MULT, SlotRecord.SEVEN_ADD_MULT, SlotRecord.SEVEN_ALL_MULT, SlotRecord.TWO_MATCH_MULT,
+          SlotRecord.THREE_MATCH_MULT, SlotRecord.DOLLAR_FIVE_BONUS, SlotReelImage.CHERRIES.toString(), SlotReelImage.LEMON.toString(), SlotRecord.FRUIT_BONUS, SlotReelImage.BELL.toString(), SlotRecord.BELL_BONUS)
+    );
     return helpFunctions;
   }
 
