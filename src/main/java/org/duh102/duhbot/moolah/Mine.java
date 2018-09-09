@@ -31,9 +31,9 @@ public class Mine {
   }
   public Pair<Double, Long> genMineRichness() {
     double gauss = rand.nextGaussian();
-    // For 10k runs, saw a distribution of about [min, q1, q2, q3, max] [1.00, 1.47, 2.00, 3.21, 113.48]
-    Double richness = new Double(Math.pow(10.0, (gauss/2.0))+1); //richness in $ per mining chunk
-    // We want poorer veins to last longer, ex $1/chunk expected to last around 4 hours while $114/chunk 10 minutes
+    // For 10k runs, saw a distribution of about [min, q1, q2, q3, max] [3.84, 60.72, 101.035, 169.26, 2844.74]
+    Double richness = new Double(Math.pow(10.0, (gauss/3.0+2.0))+1); //richness in $ per mining chunk
+    // We want poorer veins to last longer, ex $1/chunk expected to last around 4 hours while $2800/chunk 10 minutes
     // For 10k runs, saw a distribution of about [min, q1, q2, q3, max] [12716295, 3203895, 2549358, 2005776, 614268]
     Long time = new Long(Math.round((AVG_UPDATE/Math.max(Math.pow(2, ((gauss+1)/2)), 0.025))/2.0)+1); // in ms
     return new Pair<Double, Long>(richness, time);

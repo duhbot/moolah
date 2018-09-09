@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public enum HiLoBetType {
-  HIGH("HIGH", 2.0), LOW("LOW", 2.0), EQUAL("EQUAL", 5.0);
+  HIGH("HIGH", 3.0), LOW("LOW", 3.0), EQUAL("EQUAL", 15.0);
   private String nicename;
   private double multiplier;
   private static Pattern typePat = Pattern.compile("^(h(i(gh?)?)?|l(ow?)?|e(q(u(al?)?)?)?)");

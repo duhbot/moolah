@@ -23,9 +23,9 @@ public class SlotRecord {
     }
   }
   public static final int NUM_SLOTS = 3;
-  public static final double BAR_MULT = 2.0, SEVEN_ADD_MULT = 1.1, SEVEN_ALL_MULT = 7.0,
-         TWO_MATCH_MULT = 1.2, THREE_MATCH_MULT = 2.0,
-         DOLLAR_FIVE_BONUS = 1.0, FRUIT_BONUS = 2.0, BELL_BONUS = 3.0;
+  public static final double BAR_MULT = 200.0, SEVEN_ADD_MULT = 1.3, SEVEN_ALL_MULT = 49.0,
+         TWO_MATCH_MULT = 3.0, THREE_MATCH_MULT = 7.0,
+         DOLLAR_FIVE_BONUS = 2.0, FRUIT_BONUS = 6.0, BELL_BONUS = 10.0;
   private static final Random rand = new Random();
 
   public long outcomeID;
@@ -155,7 +155,7 @@ public class SlotRecord {
     Matcher barMatcher = barFinder.matcher(slotImages);
     if( barMatcher.find() ) {
       if( barMatcher.group().length() == NUM_SLOTS )
-        multiplier = 2.0;
+        multiplier = BAR_MULT;
     } else {
       int numSevens = 0;
       Matcher sevenMatcher = sevenFinder.matcher(slotImages);
@@ -163,7 +163,7 @@ public class SlotRecord {
         numSevens += sevenMatcher.group().length();
       }
       if( numSevens == NUM_SLOTS ) {
-        multiplier = 7.0;
+        multiplier = SEVEN_ALL_MULT;
       } else {
         Matcher symbolMatcher = symbolFinder.matcher(slotImages);
         while( symbolMatcher.find() ) {
