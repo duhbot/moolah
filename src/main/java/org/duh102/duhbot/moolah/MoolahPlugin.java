@@ -64,6 +64,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     respondEvent(event, String.format("Unable to use %s so soon, please wait at least %s", command, strRateLimit));
   }
 
+  public static void replyUserPermissionsError(MessageEvent event) {
+    respondEvent(event, String.format("User %s has insufficient permissions, must have vop+ at least", event.getUser().getNick()));
+  }
+
   public static void replyUnknownCommand(MessageEvent event, String command) {
     respondEvent(event, String.format("Unknown command '%s', see help for valid subcommands", command));
   }
@@ -217,6 +221,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     BankAccount acct = null;
     try {
       username = getUserReg(event.getChannel(), event.getUser());
+      if( username == null ) {
+        replyUserPermissionsError(event);
+        return null;
+      }
       acct = db.openAccount(username);
       replyAccountOpened(event, acct);
     } catch( RuntimeException re ) {
