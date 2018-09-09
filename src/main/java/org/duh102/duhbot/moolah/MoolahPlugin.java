@@ -168,8 +168,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     event.respond(messagePrefix + message);
   }
 
-  public String getUserReg (Channel channel, User user) {
-    return channel.getNormalUsers().contains(user)?null:user.getNick().toLowerCase();
+  public String getUserReg (Channel channel, User user) throws InsufficientPrivilegesException {
+    if( channel.getNormalUsers().contains(user) )
+      throw new InsufficientPrivilegesException();
+    return user.getNick().toLowerCase();
   }
 
   static String message, subCommand;
@@ -221,15 +223,10 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     BankAccount acct = null;
     try {
       username = getUserReg(event.getChannel(), event.getUser());
-      if( username == null ) {
-        replyUserPermissionsError(event);
-        return null;
-      }
       acct = db.openAccount(username);
       replyAccountOpened(event, acct);
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -249,9 +246,8 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       BankAccount account = db.getAccountExcept(username);
       record = MineRecord.recordMineAttempt(db, account);
       replyMineAttempt(event, account, record);
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( AccountDoesNotExist adne ) {
       replyNoAccount(event, username);
     } catch( RecordFailure rf ) {
@@ -266,21 +262,17 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
   public void doBalance(MessageEvent event, String[] arguments) {
-    String username;
-    if( arguments.length > 0 )
-      username = arguments[0];
-    else {
-      try {
-        username = getUserReg(event.getChannel(), event.getUser());
-      } catch( RuntimeException re ) {
-        re.printStackTrace();
-        replyGenericError(event);
-        return;
-      }
-    }
+    String username = null;
     try {
+      if( arguments.length > 0 )
+        username = arguments[0];
+      else {
+        username = getUserReg(event.getChannel(), event.getUser());
+      }
       BankAccount account = db.getAccountExcept(username);
       replyBalance(event, account);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( AccountDoesNotExist adne ) {
       replyNoAccount(event, username);
     } catch( RecordFailure rf ) {
@@ -305,13 +297,12 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       dest = db.getAccountExcept(destName);
       record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       replyTransfer(event, source, dest, record);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replyTransferArgumentError(event);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[1]);
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -347,13 +338,12 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       record = SlotRecord.recordSlotAttempt(db, acct, wager);
       replySlots(event, acct, record);
       antiSpamMapSlots.put(acct.user, now);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replySlotsArgumentError(event);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[0]);
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -390,15 +380,14 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
       replyHiLo(event, acct, record);
       antiSpamMapHiLo.put(acct.user, now);
+    } catch( InsufficientPrivilegesException ipe ) {
+      replyUserPermissionsError(event);
     } catch( ArrayIndexOutOfBoundsException oob ) {
       replyHiLoArgumentError(event);
     } catch( InvalidInputError iie ) {
       replyHiLoTypeError(event, arguments[0]);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[1]);
-    } catch( RuntimeException re ) {
-      re.printStackTrace();
-      replyGenericError(event);
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();

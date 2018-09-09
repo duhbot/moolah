@@ -1,26 +1,45 @@
 package org.duh102.duhbot.moolah;
 
 import java.sql.Connection;
+import java.io.IOException;
 
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import org.pircbotx.PircBotX;
+import org.pircbotx.UserChannelDao;
 import org.pircbotx.Channel;
+import org.pircbotx.InputParser;
 import org.pircbotx.UserHostmask;
 import org.pircbotx.User;
 import org.pircbotx.Configuration;
 import org.pircbotx.hooks.managers.GenericListenerManager;
 import org.pircbotx.hooks.*;
 import org.pircbotx.hooks.events.*;
+import org.pircbotx.exception.IrcException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Test;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MoolahPluginTest {
   /*
    * Mock stuff
    */
+  String[] fakeRawLines = new String[] {
+    ":irc.testserv.net 332 TestBot #achannel :This is a motd!",
+    ":irc.testserv.net 333 TestBot #achannel theboss!~theboss@boss.place 1531359304",
+    ":irc.testserv.net 353 TestBot @ #achannel :NoPerms!~NoPerms@noplace.net @FakeUser1!~FakeUser1@aplace.net @FakeUser2!~FakeUser2@someplace.net",
+    ":irc.testserv.net 366 TestBot #achannel :End of /NAMES list.",
+    ":irc.testserv.net 324 TestBot #achannel +npstz ",
+    ":irc.testserv.net 329 TestBot #achannel 1325392953",
+    ":irc.testserv.net 352 TestBot #achannel ~NoPerms noplace.net * NoPerms H :0 NoPermsReal",
+    ":irc.testserv.net 352 TestBot #achannel ~FakeUser1 aplace.net * FakeUser1 Hr@ :0 FakeUser1Real",
+    ":irc.testserv.net 352 TestBot #achannel ~FakeUser2 someplace.net * FakeUser2 Hr@ :0 FakeUser2Real",
+    ":irc.testserv.net 315 TestBot #achannel :End of /WHO list."
+  };
 
   Configuration.Builder config = new Configuration.Builder()
 				.addServer("127.1.1.1")
@@ -32,25 +51,33 @@ class MoolahPluginTest {
 				.setCapEnabled(false);
   PircBotX fakeBot = new PircBotX(config.buildConfiguration());
 
-  private class FakeUserHostmask extends UserHostmask {
-    public FakeUserHostmask(String nick, String user, String host, String unk) {
-      super(fakeBot, nick, user, host, unk);
+  UserHostmask fakeUserHost1 = null,
+                   fakeUserHost2 = null,
+                   noPermsUserHost = null;
+  User fakeUser1 = null,
+           fakeUser2 = null,
+           noPermsUser = null;
+  Channel fakeChannel = null;
+  @BeforeAll
+  void initAll() {
+    UserChannelDao fakeDao = fakeBot.getUserChannelDao();
+    fakeDao.createChannel("#achannel");
+    InputParser inputParser = fakeBot.getInputParser();
+    for( String line : fakeRawLines ) {
+      try {
+        inputParser.handleLine(line);
+      } catch( IOException | IrcException ioe ) {
+        ioe.printStackTrace();
+      }
     }
+    fakeUser1 = fakeDao.getUser("FakeUser1");
+    fakeUser2 = fakeDao.getUser("FakeUser2");
+    noPermsUser = fakeDao.getUser("NoPerms");
+    fakeUserHost1 = (UserHostmask)fakeUser1;
+    fakeUserHost2 = (UserHostmask)fakeUser2;
+    noPermsUserHost = (UserHostmask)noPermsUser;
+    fakeChannel = fakeDao.getChannel("#achannel");
   }
-  private class FakeUser extends User {
-    public FakeUser(FakeUserHostmask mask) {
-      super(mask);
-    }
-  }
-  private class FakeChannel extends Channel {
-    public FakeChannel(String channelName) {
-      super(fakeBot, channelName);
-    }
-  }
-  FakeUserHostmask fakeUserHost1 = new FakeUserHostmask("aFakeUser", "aRealname", "aPlace.net", ""),
-                   fakeUserHost2 = new FakeUserHostmask("anotherFakeUser", "anotherRealname", "anotherPlace.net", "");
-  FakeUser fakeUser1 = new FakeUser(fakeUserHost1), fakeUser2 = new FakeUser(fakeUserHost2);
-  FakeChannel fakeChannel = new FakeChannel("achannel");
   private class FakeMessageEvent extends MessageEvent {
     private String response = "";
     public FakeMessageEvent(User user, UserHostmask userMask, String message) {
@@ -69,6 +96,20 @@ class MoolahPluginTest {
   }
   public static void assertContains(String container, String containee, String message) {
     assertTrue(container.contains(containee), message);
+  }
+
+  /*
+   * User permissions levels
+   */
+  @Test
+  public void testGetUserReg() throws Exception {
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    assertEquals(fakeUser1.getNick().toLowerCase(), plugin.getUserReg(fakeChannel, fakeUser1));
+    assertEquals(fakeUser2.getNick().toLowerCase(), plugin.getUserReg(fakeChannel, fakeUser2));
+    assertThrows(InsufficientPrivilegesException.class, () -> {
+      plugin.getUserReg(fakeChannel, noPermsUser);
+    });
   }
 
   /*
@@ -192,7 +233,7 @@ class MoolahPluginTest {
     long bal = 102314l;
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -215,7 +256,7 @@ class MoolahPluginTest {
     long bal = 12387l;
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -237,7 +278,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -259,7 +300,75 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      plugin.doBalance(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "does not have");
+      assertContains(response.toLowerCase(), "bank account");
+      assertContains(response.toLowerCase(), username.toLowerCase());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testBalanceSameUserNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String[] arguments = new String[]{};
+    String username = noPermsUser.getNick();
+    long bal = 102314l;
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      db.openAccount(username, bal);
+      plugin.doBalance(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), username.toLowerCase());
+      assertContains(response, "insufficient permissions");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testBalanceOtherUserNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username = fakeUser2.getNick();
+    String[] arguments = new String[]{username};
+    long bal = 12387l;
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      db.openAccount(username, bal);
+      plugin.doBalance(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), username.toLowerCase());
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, bal));
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testBalanceNoOtherUserNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username = fakeUser2.getNick();
+    String[] arguments = new String[]{username};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -285,7 +394,7 @@ class MoolahPluginTest {
     long initialBal = 101l;
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -308,7 +417,7 @@ class MoolahPluginTest {
     String username = fakeUser1.getNick();
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -330,7 +439,7 @@ class MoolahPluginTest {
     String username = fakeUser1.getNick();
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -354,7 +463,7 @@ class MoolahPluginTest {
     String username = fakeUser1.getNick();
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -376,7 +485,7 @@ class MoolahPluginTest {
     String username = fakeUser1.getNick();
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -387,6 +496,29 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), username.toLowerCase());
       assertContains(response.toLowerCase(), "already exists");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testOpenNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username = noPermsUser.getNick();
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      plugin.doOpen(event);
+      assertThrows(AccountDoesNotExist.class, () -> {
+        db.getAccountExcept(username);
+      });
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "insufficient permissions");
+      assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -403,7 +535,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -432,7 +564,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -456,7 +588,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, "asdf"};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -479,7 +611,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -502,7 +634,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -527,7 +659,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -553,7 +685,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -577,7 +709,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -601,7 +733,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username2, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -624,7 +756,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{username1, String.format("%d", transfer)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -634,6 +766,27 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "same account");
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testTransferNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username1 = noPermsUser.getNick(), username2 = fakeUser2.getNick();
+    String[] arguments = new String[]{username2, "1"};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      plugin.doTransfer(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "insufficient permissions");
+      assertContains(response.toLowerCase(), username1.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -650,7 +803,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -677,7 +830,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -702,7 +855,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -725,7 +878,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{"asdf"};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -748,7 +901,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -774,7 +927,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -785,6 +938,61 @@ class MoolahPluginTest {
       assertContains(response, MoolahPlugin.messagePrefix);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
+      assertContains(response.toLowerCase(), username.toLowerCase());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsTooSoon() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick();
+    long initialBal = 123484l, wager = initialBal/4;
+    String[] arguments = new String[]{String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapSlots.clear();
+      SlotRecord record = plugin.doSlots(event, arguments);
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response, record.getImagesString());
+      plugin.doSlots(event, arguments);
+      response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "please wait");
+      assertContains(response.toLowerCase(), MoolahPlugin.slotsComm.toLowerCase());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testSlotsNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username = noPermsUser.getNick();
+    String[] arguments = new String[]{"1"};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      MoolahPlugin.antiSpamMapSlots.clear();
+      plugin.doSlots(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "insufficient permissions");
       assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
@@ -802,7 +1010,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -832,7 +1040,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -862,7 +1070,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -892,7 +1100,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -919,7 +1127,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -943,7 +1151,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -970,7 +1178,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -994,7 +1202,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, "asdf"};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1018,7 +1226,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1044,7 +1252,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, String.format("%d", wager)};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1069,7 +1277,7 @@ class MoolahPluginTest {
     String[] arguments = new String[]{type, "10"};
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1079,6 +1287,64 @@ class MoolahPluginTest {
       assertTrue(response.length() > 0);
       assertContains(response.toLowerCase(), "does not have");
       assertContains(response.toLowerCase(), "bank account");
+      assertContains(response.toLowerCase(), username.toLowerCase());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testHiLoLowTooSoon() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+    String username = fakeUser1.getNick(), type = "low";
+    long initialBal = 123484l, wager = initialBal/4;
+    String[] arguments = new String[]{type, String.format("%d", wager)};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      BankAccount acct = db.openAccount(username, initialBal);
+      MoolahPlugin.antiSpamMapHiLo.clear();
+      HiLoRecord record = plugin.doHiLo(event, arguments);
+      acct = db.getAccountExcept(acct.uid);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
+      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
+      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
+      assertContains(response.toLowerCase(), type.toLowerCase());
+      assertContains(response, String.format("%d", record.resultInt));
+      assertContains(response, String.format("%d", HiLoRecord.MID));
+      assertContains(response, (record.payout > 0)?"<":">=");
+      record = plugin.doHiLo(event, arguments);
+      response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "please wait");
+      assertContains(response.toLowerCase(), MoolahPlugin.hiLoComm.toLowerCase());
+    } finally {
+      conn.rollback();
+    }
+  }
+  @Test
+  public void testHiLoLowNoPermissions() throws Exception {
+    FakeMessageEvent event = new FakeMessageEvent(noPermsUser, noPermsUserHost, "amessage");
+    String username = noPermsUser.getNick();
+    String[] arguments = new String[]{"low", "1"};
+
+    BankDB db = BankDB.getMemoryInstance();
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
+    Connection conn = db.getDBConnection();
+    conn.setAutoCommit(false);
+    try {
+      MoolahPlugin.antiSpamMapHiLo.clear();
+      plugin.doHiLo(event, arguments);
+      String response = event.getResponse();
+      assertTrue(response.length() > 0);
+      assertContains(response, MoolahPlugin.messagePrefix);
+      assertContains(response.toLowerCase(), "insufficient permissions");
       assertContains(response.toLowerCase(), username.toLowerCase());
     } finally {
       conn.rollback();
@@ -1097,7 +1363,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1121,7 +1387,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1147,7 +1413,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1173,7 +1439,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1205,7 +1471,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1221,42 +1487,6 @@ class MoolahPluginTest {
       assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
       assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
       assertContains(response, record.getImagesString());
-    } finally {
-      conn.rollback();
-    }
-  }
-  @Test
-  public void testSlotsOnMessageTooSoon() throws Exception {
-    String username = fakeUser1.getNick();
-    long initialBal = 123484l, wager = initialBal/4;
-    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
-        String.format("%s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.slotsComm, wager)
-    );
-
-    BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
-    Connection conn = db.getDBConnection();
-    conn.setAutoCommit(false);
-    try {
-      BankAccount acct = db.openAccount(username, initialBal);
-      MoolahPlugin.antiSpamMapSlots.clear();
-      plugin.onMessage(event);
-      SlotRecord record = (SlotRecord)plugin.lastHandled;
-      acct = db.getAccountExcept(acct.uid);
-      String response = event.getResponse();
-      assertTrue(response.length() > 0);
-      assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
-      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
-      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
-      assertContains(response, record.getImagesString());
-      plugin.onMessage(event);
-      acct = db.getAccountExcept(acct.uid);
-      response = event.getResponse();
-      assertTrue(response.length() > 0);
-      assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response.toLowerCase(), "please wait");
-      assertContains(response.toLowerCase(), MoolahPlugin.slotsComm.toLowerCase());
     } finally {
       conn.rollback();
     }
@@ -1270,7 +1500,7 @@ class MoolahPluginTest {
     );
 
     BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
+    MoolahPlugin plugin = new MoolahPlugin(db, false);
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
@@ -1289,45 +1519,6 @@ class MoolahPluginTest {
       assertContains(response, String.format("%d", record.resultInt));
       assertContains(response, String.format("%d", HiLoRecord.MID));
       assertContains(response, (record.payout > 0)?"<":">=");
-    } finally {
-      conn.rollback();
-    }
-  }
-  @Test
-  public void testHiLoLowOnMessageTooSoon() throws Exception {
-    String username = fakeUser1.getNick(), type = "low";
-    long initialBal = 123484l, wager = initialBal/4;
-    FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1,
-        String.format("%s %s %s %d", MoolahPlugin.commandPrefix, MoolahPlugin.hiLoComm, type, wager)
-    );
-
-    BankDB db = BankDB.getMemoryInstance();
-    MoolahPlugin plugin = new MoolahPlugin(db, true);
-    Connection conn = db.getDBConnection();
-    conn.setAutoCommit(false);
-    try {
-      BankAccount acct = db.openAccount(username, initialBal);
-      MoolahPlugin.antiSpamMapHiLo.clear();
-      plugin.onMessage(event);
-      HiLoRecord record = (HiLoRecord)plugin.lastHandled;
-      acct = db.getAccountExcept(acct.uid);
-      String response = event.getResponse();
-      assertTrue(response.length() > 0);
-      assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, acct.balance));
-      assertContains(response.toLowerCase(), String.format("%.2fx payout", record.multiplier));
-      assertContains(response, String.format("%s%,d", MoolahPlugin.currSymbol, record.payout));
-      assertContains(response.toLowerCase(), type.toLowerCase());
-      assertContains(response, String.format("%d", record.resultInt));
-      assertContains(response, String.format("%d", HiLoRecord.MID));
-      assertContains(response, (record.payout > 0)?"<":">=");
-      plugin.onMessage(event);
-      acct = db.getAccountExcept(acct.uid);
-      response = event.getResponse();
-      assertTrue(response.length() > 0);
-      assertContains(response, MoolahPlugin.messagePrefix);
-      assertContains(response.toLowerCase(), "please wait");
-      assertContains(response.toLowerCase(), MoolahPlugin.hiLoComm.toLowerCase());
     } finally {
       conn.rollback();
     }
