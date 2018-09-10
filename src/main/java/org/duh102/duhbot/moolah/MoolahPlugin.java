@@ -3,10 +3,13 @@ package org.duh102.duhbot.moolah;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.ImmutableSortedSet;
+
 import org.pircbotx.Colors;
 import org.pircbotx.User;
 import org.pircbotx.Channel;
 import org.pircbotx.hooks.*;
+import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.events.*;
 
 import org.duh102.duhbot.functions.*;
@@ -22,11 +25,8 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
          mineComm = "mine", openComm = "open";
   public static final String strRateLimit = "5 minutes";
   public static final long rateLimit = 5*60*1000;
-  public static ConcurrentHashMap<String, Long> antiSpamMapSlots = new ConcurrentHashMap<String, Long>();
-  public static ConcurrentHashMap<String, Long> antiSpamMapHiLo = new ConcurrentHashMap<String, Long>();
 
   BankDB db;
-  boolean disconnected = false; //if disconnected we should assume we're testing
   public MoolahPlugin() {
     try {
       db = BankDB.getDBInstance();
@@ -35,95 +35,102 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
       db = null;
     }
   }
-  public MoolahPlugin(BankDB db, boolean disconnected) {
+  public MoolahPlugin(BankDB db) {
     this.db = db;
-    this.disconnected = disconnected;
   }
 
   public static String[] parseCommand(String input) {
     return input.split("\\s+");
   }
 
-  public static void replyGenericError(MessageEvent event) {
+  public static void replyGenericError(GenericMessageEvent event) {
     respondEvent(event, "An unknown error occurred, please notify maintainers");
   }
 
-  public static void replyDBError(MessageEvent event) {
+  public static void replyDBError(GenericMessageEvent event) {
     respondEvent(event, "An unknown database error occurred, please notify maintainers");
   }
 
-  public static void replyDBUnreachableError(MessageEvent event) {
+  public static void replyDBUnreachableError(GenericMessageEvent event) {
     respondEvent(event, "The database is unreachable, please notify maintainers");
   }
 
-  public static void replyUseHelp(MessageEvent event) {
+  public static void replyUseHelp(GenericMessageEvent event) {
     respondEvent(event, String.format("%s cannot be used alone, see help for valid subcommands", commandPrefix));
   }
 
-  public static void replyTooSoon(MessageEvent event, String command) {
+  public static void replyTooSoon(GenericMessageEvent event, String command) {
     respondEvent(event, String.format("Unable to use %s so soon, please wait at least %s", command, strRateLimit));
   }
 
-  public static void replyUserPermissionsError(MessageEvent event) {
+  public static void replyUserPermissionsError(GenericMessageEvent event) {
     respondEvent(event, String.format("User %s has insufficient permissions, must have vop+ at least", event.getUser().getNick()));
   }
 
-  public static void replyUnknownCommand(MessageEvent event, String command) {
+  public static void replyUsePrivateMessage(GenericMessageEvent event) {
+    respondEvent(event, "Unable to use this command in a channel, send it to this bot in private");
+  }
+
+  public static void replyUsePublicMessage(GenericMessageEvent event) {
+    respondEvent(event, "Unable to use this command in a private message, send it to this bot in public");
+  }
+
+  public static void replyUnknownCommand(GenericMessageEvent event, String command) {
     respondEvent(event, String.format("Unknown command '%s', see help for valid subcommands", command));
   }
 
-  public static void replyBalance(MessageEvent event, BankAccount acct) {
+  public static void replyBalance(GenericMessageEvent event, BankAccount acct) {
     respondEvent(event, String.format("%s has %s%,d", acct.user, currSymbol, acct.balance));
   }
 
-  public static void replyInsufficientFunds(MessageEvent event, BankAccount acct, long required) {
+  public static void replyInsufficientFunds(GenericMessageEvent event, BankAccount acct, long required) {
     respondEvent(event, String.format("You have insufficient funds to complete that transaction; you have %1$s%2$,d, you need %1$s%3$,d", currSymbol, acct.balance, required));
   }
 
-  public static void replyNoAccount(MessageEvent event, String username) {
+  public static void replyNoAccount(GenericMessageEvent event, String username) {
     respondEvent(event, String.format("User '%s' does not have a registered bank account", username));
   }
 
-  public static void replyAccountAlreadyExists(MessageEvent event, String username) {
+  public static void replyAccountAlreadyExists(GenericMessageEvent event, String username) {
     respondEvent(event, String.format("A registered bank account for user '%s' already exists", username));
   }
 
-  public static void replyMineTooSoon(MessageEvent event) {
+  public static void replyMineTooSoon(GenericMessageEvent event) {
     respondEvent(event, String.format("Mine attempt too soon, wait at least half an hour between attempts"));
   }
 
-  public static void replyMineAttempt(MessageEvent event, BankAccount account, MineRecord record) {
+  public static void replyMineAttempt(GenericMessageEvent event, BankAccount account, MineRecord record) {
     respondEvent(event, String.format("You mined %,d %s, you now have %s%,d", record.yield, currFull, currSymbol, account.balance));
   }
 
-  public static void replyAccountOpened(MessageEvent event, BankAccount acct) {
+  public static void replyAccountOpened(GenericMessageEvent event, BankAccount acct) {
     respondEvent(event, String.format("Bank account opened for user '%s'", acct.user));
   }
 
-  public static void replyTransfer(MessageEvent event, BankAccount source, BankAccount dest, TransferRecord record) {
+  public static void replyTransfer(GenericMessageEvent event, BankAccount source, BankAccount dest, TransferRecord record) {
     respondEvent(event,
         String.format("Transfer successful: %2$s transferred %1$s%4$,d to %3$s, %2$s now has %1$s%5$,d and %3$s now has %1$s%6$,d",
           currSymbol, source.user, dest.user, record.amount, source.balance, dest.balance)
     );
   }
 
-  public static void replyTransferArgumentError(MessageEvent event) {
+  public static void replyTransferArgumentError(GenericMessageEvent event) {
     respondEvent(event, String.format("Invalid command, usage: %s %s [destination] [amount]", commandPrefix, transferComm));
   }
 
-  public static void replyInvalidAmount(MessageEvent event, String amountStr) {
+  public static void replyInvalidAmount(GenericMessageEvent event, String amountStr) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %s", amountStr));
   }
 
-  public static void replyInvalidAmount(MessageEvent event, long amount) {
+  public static void replyInvalidAmount(GenericMessageEvent event, long amount) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %,d", amount));
   }
 
-  public static void replyTransferSameAccount(MessageEvent event, BankAccount account) {
+  public static void replyTransferSameAccount(GenericMessageEvent event, BankAccount account) {
     respondEvent(event, String.format("Cannot transfer money between the same account: %s", account.user));
   }
 
-  public static void replySlots(MessageEvent event, BankAccount acct, SlotRecord record) {
+  public static void replySlots(GenericMessageEvent event, BankAccount acct, SlotRecord record) {
     respondEvent(event,
         String.format("Slots outcome: %2$s, %3$.2fx payout (%1$s%4$,d), your balance now %1$s%5$,d",
           currSymbol, record.getImagesString(), record.multiplier, record.payout, acct.balance
@@ -131,11 +138,11 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     );
   }
 
-  public static void replySlotsArgumentError(MessageEvent event) {
+  public static void replySlotsArgumentError(GenericMessageEvent event) {
     respondEvent(event, String.format("Invalid command, usage: %s %s [wager]", commandPrefix, slotsComm));
   }
 
-  public static void replyHiLo(MessageEvent event, BankAccount acct, HiLoRecord record) {
+  public static void replyHiLo(GenericMessageEvent event, BankAccount acct, HiLoRecord record) {
     boolean won = record.payout > 0l;
     String comparison = "<>";
     switch(record.hiLo) {
@@ -156,44 +163,146 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     );
   }
 
-  public static void replyHiLoArgumentError(MessageEvent event) {
+  public static void replyHiLoArgumentError(GenericMessageEvent event) {
     respondEvent(event, String.format("Invalid command, usage: %s %s [h(igh)|l(ow)|e(qual)] [wager]", commandPrefix, hiLoComm));
   }
 
-  public static void replyHiLoTypeError(MessageEvent event, String type) {
+  public static void replyHiLoTypeError(GenericMessageEvent event, String type) {
     respondEvent(event, String.format("Invalid HiLo type '%s', must be [h(igh)|l(ow)|e(qual)]", type));
   }
 
-  public static void respondEvent(MessageEvent event, String message) {
-    event.respond(messagePrefix + message);
+  public static void respondEvent(GenericMessageEvent event, String message) {
+    String response = messagePrefix + message;
+    // We only need the nick prefix if we're responding to a channel
+    if( event instanceof MessageEvent )
+      event.respond(response);
+    else
+      event.respondWith(response);
   }
 
-  public String getUserReg (Channel channel, User user) throws InsufficientPrivilegesException {
+  public void announceHiLoBust(GenericMessageEvent event, BankAccount account, HiLoRecord record) {
+    sendAnnouncement(event,
+        String.format("%s just bet %s%,d on %s and lost it all, leaving them with %s%,d",
+          account.user, currSymbol, record.wager, record.hiLo.toString().toLowerCase(), currSymbol, account.balance)
+    );
+  }
+  public void announceSlotsBust(GenericMessageEvent event, BankAccount account, SlotRecord record) {
+    sendAnnouncement(event,
+        String.format("%s just bet %s%,d on the slots and lost it all, leaving them with %s%,d",
+          account.user, currSymbol, record.wager, currSymbol, account.balance)
+    );
+  }
+  public void announceHiLoJackpot(GenericMessageEvent event, BankAccount account, HiLoRecord record) {
+    sendAnnouncement(event,
+        String.format("%2$s just bet %1$s%3$,d on %4$s and hit the jackpot, netting a huge payout of %1$s%5$,d (%$6.2f), leaving them with %1$s%7$,d",
+          currSymbol, account.user, record.wager, record.hiLo.toString().toLowerCase(), record.payout, record.multiplier, account.balance)
+    );
+  }
+  public void announceSlotsJackpot(GenericMessageEvent event, BankAccount account, SlotRecord record) {
+    sendAnnouncement(event,
+        String.format("%2$s just bet %1$s%3$,d on the slots and hit the jackpot, netting a huge payout of %1$s%4$,d (%5$.2f), leaving them with %1$s%6$,d",
+          currSymbol, account.user, record.wager, record.payout, record.multiplier, account.balance)
+    );
+  }
+
+  public void sendAnnouncement(GenericMessageEvent event, String message) {
+    ImmutableSortedSet<Channel> channels = event.getBot().getUserChannelDao().getAllChannels();
+    for( Channel chan : channels ) {
+      chan.send().message(messagePrefix + message);
+    }
+  }
+
+  public String getUserReg(Channel channel, User user) throws InsufficientPrivilegesException {
     if( channel.getNormalUsers().contains(user) )
       throw new InsufficientPrivilegesException();
     return user.getNick().toLowerCase();
+  }
+  //less efficient
+  public String getUserReg(GenericMessageEvent event, User user) throws InsufficientPrivilegesException {
+    for( Channel channel : event.getBot().getUserChannelDao().getAllChannels() ) {
+      if( !channel.getNormalUsers().contains(user) )
+        return user.getNick().toLowerCase();
+    }
+    throw new InsufficientPrivilegesException();
+  }
+
+  public boolean isSignificantWager(BankAccount account, long wager) {
+    if( wager < 5000l )
+      return false;
+    if( ((double)wager) / account.balance < 0.9 )
+      return false;
+    try {
+      if( ((double)wager) / db.getAccountTotal() < 0.4 )
+        return false;
+    } catch( RecordFailure rf ) {
+      rf.printStackTrace();
+      return false;
+    }
+    return true;
   }
 
   static String message, subCommand;
   static String[] commandParts, arguments;
   public static Object lastHandled = null;
-  public void onMessage(MessageEvent event) {
-    lastHandled = null;
+  static Pair<String, String[]> doNotRespond = new Pair<String, String[]>(null, null);
+  public Pair<String, String[]> parseHandleCommand(GenericMessageEvent event) {
     message = Colors.removeFormattingAndColors(event.getMessage()).trim();
     if( !message.startsWith(commandPrefix) )
-      return;
+      return doNotRespond;
     if( db == null ) {
       replyDBUnreachableError(event);
-      return;
+      return doNotRespond;
     }
     commandParts = parseCommand(message);
     arguments = Arrays.copyOfRange(commandParts, Math.min(2, commandParts.length), commandParts.length);
-    if( commandParts.length < 2 )
+    if( commandParts.length < 2 ) {
       replyUseHelp(event);
+      return doNotRespond;
+    }
     subCommand = commandParts[1];
+    return new Pair<String, String[]>(subCommand, arguments);
+  }
+
+  public void onMessage(MessageEvent event) {
+    lastHandled = null;
+    Pair<String, String[]> messageParts = parseHandleCommand(event);
+    if( messageParts == doNotRespond )
+      return;
+    subCommand = messageParts.first;
+    arguments = messageParts.second;
     switch(subCommand) {
       case openComm:
         lastHandled = (Object)doOpen(event);
+        return;
+      case mineComm:
+        replyUsePrivateMessage(event);
+        return;
+      case balanceComm:
+        doBalance(event, arguments);
+        return;
+      case transferComm:
+        lastHandled = (Object)doTransfer(event, arguments);
+        return;
+      case slotsComm:
+        replyUsePrivateMessage(event);
+        return;
+      case hiLoComm:
+        replyUsePrivateMessage(event);
+        return;
+      default:
+        replyUnknownCommand(event, subCommand);
+    }
+  }
+  public void onPrivateMessage(PrivateMessageEvent event) {
+    lastHandled = null;
+    Pair<String, String[]> messageParts = parseHandleCommand(event);
+    if( messageParts == doNotRespond )
+      return;
+    subCommand = messageParts.first;
+    arguments = messageParts.second;
+    switch(subCommand) {
+      case openComm:
+        replyUsePublicMessage(event);
         return;
       case mineComm:
         lastHandled = (Object)doMine(event);
@@ -218,11 +327,15 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public BankAccount doOpen(MessageEvent event) {
+  public BankAccount doOpen(GenericMessageEvent event) {
     String username = null;
     BankAccount acct = null;
     try {
-      username = getUserReg(event.getChannel(), event.getUser());
+      User user = event.getUser();
+      if( event instanceof MessageEvent )
+        username = getUserReg(((MessageEvent)event).getChannel(), user);
+      else
+        username = getUserReg(event, user);
       acct = db.openAccount(username);
       replyAccountOpened(event, acct);
     } catch( InsufficientPrivilegesException ipe ) {
@@ -238,11 +351,15 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public MineRecord doMine(MessageEvent event) {
+  public MineRecord doMine(GenericMessageEvent event) {
     String username = null;
     MineRecord record = null;
     try {
-      username = getUserReg(event.getChannel(), event.getUser());
+      User user = event.getUser();
+      if( event instanceof MessageEvent )
+        username = getUserReg(((MessageEvent)event).getChannel(), user);
+      else
+        username = getUserReg(event, user);
       BankAccount account = db.getAccountExcept(username);
       record = MineRecord.recordMineAttempt(db, account);
       replyMineAttempt(event, account, record);
@@ -261,13 +378,17 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public void doBalance(MessageEvent event, String[] arguments) {
+  public void doBalance(GenericMessageEvent event, String[] arguments) {
     String username = null;
     try {
       if( arguments.length > 0 )
         username = arguments[0];
       else {
-        username = getUserReg(event.getChannel(), event.getUser());
+        User user = event.getUser();
+        if( event instanceof MessageEvent )
+          username = getUserReg(((MessageEvent)event).getChannel(), user);
+        else
+          username = getUserReg(event, user);
       }
       BankAccount account = db.getAccountExcept(username);
       replyBalance(event, account);
@@ -283,7 +404,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public TransferRecord doTransfer(MessageEvent event, String[] arguments) {
+  public TransferRecord doTransfer(GenericMessageEvent event, String[] arguments) {
     String destName = null;
     long transferAmount = 0;
     String sourceName = null;
@@ -292,7 +413,11 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     try {
       destName = arguments[0];
       transferAmount = Long.parseLong(arguments[1]);
-      sourceName = getUserReg(event.getChannel(), event.getUser());
+      User user = event.getUser();
+      if( event instanceof MessageEvent )
+        sourceName = getUserReg(((MessageEvent)event).getChannel(), user);
+      else
+        sourceName = getUserReg(event, user);
       source = db.getAccountExcept(sourceName);
       dest = db.getAccountExcept(destName);
       record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
@@ -320,24 +445,27 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public SlotRecord doSlots(MessageEvent event, String[] arguments) {
+  public SlotRecord doSlots(GenericMessageEvent event, String[] arguments) {
     long wager = 0;
     String username = null;
     BankAccount acct = null;
     SlotRecord record = null;
     try {
       wager = Long.parseLong(arguments[0]);
-      username = getUserReg(event.getChannel(), event.getUser());
+      User user = event.getUser();
+      if( event instanceof MessageEvent )
+        username = getUserReg(((MessageEvent)event).getChannel(), user);
+      else
+        username = getUserReg(event, user);
       acct = db.getAccountExcept(username);
-      Long lastUsed = antiSpamMapSlots.get(acct.user);
-      Long now = System.currentTimeMillis();
-      if( lastUsed != null && lastUsed >= now-rateLimit ) {
-        replyTooSoon(event, slotsComm);
-        return null;
-      }
       record = SlotRecord.recordSlotAttempt(db, acct, wager);
+      if( (record.multiplier == 0 || SlotRecord.isJackpot(record.multiplier)) && isSignificantWager(acct, wager) ) {
+        if( record.multiplier == 0 )
+          announceSlotsBust(event, acct, record);
+        else 
+          announceSlotsJackpot(event, acct, record);
+      }
       replySlots(event, acct, record);
-      antiSpamMapSlots.put(acct.user, now);
     } catch( InsufficientPrivilegesException ipe ) {
       replyUserPermissionsError(event);
     } catch( ArrayIndexOutOfBoundsException oob ) {
@@ -360,7 +488,7 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
 
 
 
-  public HiLoRecord doHiLo(MessageEvent event, String[] arguments) {
+  public HiLoRecord doHiLo(GenericMessageEvent event, String[] arguments) {
     long wager = 0;
     HiLoBetType type = null;
     String username = null;
@@ -369,17 +497,20 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
     try {
       type = HiLoBetType.fromString(arguments[0]);
       wager = Long.parseLong(arguments[1]);
-      username = getUserReg(event.getChannel(), event.getUser());
+      User user = event.getUser();
+      if( event instanceof MessageEvent )
+        username = getUserReg(((MessageEvent)event).getChannel(), user);
+      else
+        username = getUserReg(event, user);
       acct = db.getAccountExcept(username);
-      Long lastUsed = antiSpamMapHiLo.get(acct.user);
-      Long now = System.currentTimeMillis();
-      if( lastUsed != null && lastUsed >= now-rateLimit ) {
-        replyTooSoon(event, hiLoComm);
-        return null;
-      }
       record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
+      if( (record.multiplier == 0 || HiLoRecord.isJackpot(record.multiplier)) && isSignificantWager(acct, wager) ) {
+        if( record.multiplier == 0 )
+          announceHiLoBust(event, acct, record);
+        else 
+          announceHiLoJackpot(event, acct, record);
+      }
       replyHiLo(event, acct, record);
-      antiSpamMapHiLo.put(acct.user, now);
     } catch( InsufficientPrivilegesException ipe ) {
       replyUserPermissionsError(event);
     } catch( ArrayIndexOutOfBoundsException oob ) {
@@ -427,11 +558,11 @@ public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
           HiLoRecord.MIN, HiLoRecord.MAX, HiLoRecord.MID)
     );
     helpFunctions.put("(hi/lo payouts)",
-        String.format("High: %.2fx | Equal: %.2f | Low: %.2f",
+        String.format("High: %.2fx | Equal: %.2fx | Low: %.2fx",
           HiLoBetType.HIGH.getMultiplier(), HiLoBetType.EQUAL.getMultiplier(), HiLoBetType.LOW.getMultiplier())
     );
     helpFunctions.put("(slots payouts)",
-        String.format("Any bars: %.2fx | All bars: %.2f | Per-7 bonus: %.2f | All 7s: %.2f | Two symbols: %.2f | Three symbols: %.2f | Symbol bonuses: $5 %.2f, %s%s %.2f, %s %.2f",
+        String.format("Any bars: %.2fx | All bars: %.2fx | Per-7 bonus: %.2fx | All 7s: %.2fx | Two symbols: %.2fx | Three symbols: %.2fx | Symbol bonuses: $5 %.2fx, %s%s %.2fx, %s %.2fx",
           0.0, SlotRecord.BAR_MULT, SlotRecord.SEVEN_ADD_MULT, SlotRecord.SEVEN_ALL_MULT, SlotRecord.TWO_MATCH_MULT,
           SlotRecord.THREE_MATCH_MULT, SlotRecord.DOLLAR_FIVE_BONUS, SlotReelImage.CHERRIES.toString(), SlotReelImage.LEMON.toString(), SlotRecord.FRUIT_BONUS, SlotReelImage.BELL.toString(), SlotRecord.BELL_BONUS)
     );

@@ -60,6 +60,10 @@ public class HiLoRecord {
     return new HiLoRecord(0l, account.uid, result, hiLo, wager, payout, mult, timestamp);
   }
 
+  public static boolean isJackpot(double multiplier) {
+    return multiplier >= HiLoBetType.EQUAL.getMultiplier();
+  }
+
   public static HiLoRecord recordBetHiLo(BankDB db, BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = new BankAccount(account);

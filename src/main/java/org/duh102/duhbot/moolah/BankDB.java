@@ -359,4 +359,23 @@ public class BankDB {
       throw new RecordFailure(sqle);
     }
   }
+
+  // Returns the sum total of all accounts on record
+  public long getAccountTotal() throws RecordFailure {
+    Connection conn = getDBConnection();
+    try {
+      PreparedStatement stat = conn.prepareStatement("SELECT sum(balance) AS total FROM bankAccount;");
+      ResultSet rs = stat.executeQuery();
+      try {
+        if (rs.next()) {
+          return rs.getLong("total");
+        } else
+          throw new RecordFailure("Could not get total");
+      } finally {
+        rs.close();
+      }
+    } catch( SQLException sqle ) {
+      throw new RecordFailure(sqle);
+    }
+  }
 }

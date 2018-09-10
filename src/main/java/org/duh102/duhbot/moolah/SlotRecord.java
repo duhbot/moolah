@@ -149,6 +149,9 @@ public class SlotRecord {
     }
     return builder.toString();
   }
+  public static boolean isJackpot(double multiplier) {
+    return multiplier >= BAR_MULT || multiplier >= SEVEN_ALL_MULT;
+  }
   public static double getImagesMultiplier(SlotReelImage[] reelSet) {
     String slotImages = getRegexString(reelSet);
     double multiplier = 0.0;
