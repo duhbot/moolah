@@ -16,7 +16,7 @@ import org.duh102.duhbot.functions.*;
 
 import org.duh102.duhbot.moolah.exceptions.*;
 
-public class MoolahPlugin extends ListenerAdapter implements DuhbotFunction
+public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
 {
   public static final String currSymbol = "🞛", currFull = "gemeralds", currAbrv = "gm";
   public static final String messagePrefix = String.format("[%s] ", currSymbol);

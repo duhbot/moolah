@@ -13,8 +13,8 @@ import org.pircbotx.InputParser;
 import org.pircbotx.UserHostmask;
 import org.pircbotx.User;
 import org.pircbotx.Configuration;
+import org.pircbotx.delay.StaticDelay;
 import org.pircbotx.hooks.managers.GenericListenerManager;
-import org.pircbotx.hooks.*;
 import org.pircbotx.hooks.events.*;
 import org.pircbotx.exception.IrcException;
 
@@ -46,7 +46,7 @@ class MoolahPluginTest {
 				.addServer("127.1.1.1")
 				.setListenerManager(new GenericListenerManager())
 				.setName("TestBot")
-				.setMessageDelay(0)
+				.setMessageDelay(new StaticDelay(0))
 				.setShutdownHookEnabled(false)
 				.setAutoReconnect(false)
 				.setCapEnabled(false);

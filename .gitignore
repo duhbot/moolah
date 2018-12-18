@@ -3,3 +3,5 @@
 *.class
 #ignore stray databases
 *.db
+
+/.idea

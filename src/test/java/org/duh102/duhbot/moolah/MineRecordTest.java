@@ -36,6 +36,7 @@ class MineRecordTest {
     Timestamp now = LocalTimestamp.now();
     BankAccount acct = new BankAccount(101l, "user", 0l, new Timestamp(0l));
     MineRecord record = MineRecord.mineAttempt(acct);
+
     assertEquals(acct.uid, record.uid);
     assertEquals(record.mineFractions, MineRecord.MAX_CHUNKS);
     assertTrue(record.richness >= 1.0);
