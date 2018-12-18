@@ -1,8 +1,10 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
 import java.sql.*;
 import java.util.Random;
 
+import org.duh102.duhbot.moolah.BankAccount;
+import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class HiLoRecord {

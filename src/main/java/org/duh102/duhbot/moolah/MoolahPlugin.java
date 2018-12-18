@@ -1,10 +1,13 @@
 package org.duh102.duhbot.moolah;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableSortedSet;
 
+import org.duh102.duhbot.moolah.BankAccount;
+import org.duh102.duhbot.moolah.Pair;
+import org.duh102.duhbot.moolah.SlotReelImage;
+import org.duh102.duhbot.moolah.db.*;
 import org.pircbotx.Colors;
 import org.pircbotx.User;
 import org.pircbotx.Channel;
@@ -413,6 +416,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     try {
       destName = arguments[0];
       transferAmount = Long.parseLong(arguments[1]);
+      if( transferAmount == 0 ) {
+        throw new ImproperBalanceAmount(transferAmount);
+      }
       User user = event.getUser();
       if( event instanceof MessageEvent )
         sourceName = getUserReg(((MessageEvent)event).getChannel(), user);
@@ -452,6 +458,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     SlotRecord record = null;
     try {
       wager = Long.parseLong(arguments[0]);
+      if( wager == 0 ) {
+        throw new ImproperBalanceAmount(wager);
+      }
       User user = event.getUser();
       if( event instanceof MessageEvent )
         username = getUserReg(((MessageEvent)event).getChannel(), user);
@@ -497,6 +506,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     try {
       type = HiLoBetType.fromString(arguments[0]);
       wager = Long.parseLong(arguments[1]);
+      if( wager == 0 ) {
+        throw new ImproperBalanceAmount(wager);
+      }
       User user = event.getUser();
       if( event instanceof MessageEvent )
         username = getUserReg(((MessageEvent)event).getChannel(), user);

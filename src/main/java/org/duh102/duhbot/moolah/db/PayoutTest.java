@@ -1,5 +1,6 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
+import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class PayoutTest {

@@ -1,9 +1,10 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
 import java.sql.*;
-import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.text.ParseException;
+
+import org.duh102.duhbot.moolah.*;
 import org.sqlite.SQLiteConfig;
 
 import org.duh102.duhbot.moolah.exceptions.*;

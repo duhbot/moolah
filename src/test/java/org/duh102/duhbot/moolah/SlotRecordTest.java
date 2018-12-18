@@ -5,6 +5,8 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.duh102.duhbot.moolah.db.BankDB;
+import org.duh102.duhbot.moolah.db.SlotRecord;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -4,6 +4,8 @@ import java.sql.*;
 import java.text.ParseException;
 import java.util.stream.Stream;
 
+import org.duh102.duhbot.moolah.db.BankDB;
+import org.duh102.duhbot.moolah.db.MineRecord;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;

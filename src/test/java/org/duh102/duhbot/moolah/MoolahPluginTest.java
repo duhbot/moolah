@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.sql.Connection;
 import java.io.IOException;
 
+import org.duh102.duhbot.moolah.db.*;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import org.pircbotx.PircBotX;
@@ -643,6 +644,29 @@ class MoolahPluginTest {
       conn.rollback();
     }
   }
+    @Test
+    public void testTransferBadAmountZero() throws Exception {
+        FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+        String username1 = fakeUser1.getNick(), username2 = fakeUser2.getNick();
+        long initialBal1 = 123484l, initialBal2 = 24587l, transfer = 0l;
+        String[] arguments = new String[]{username2, String.format("%d", transfer)};
+
+        BankDB db = BankDB.getMemoryInstance();
+        MoolahPlugin plugin = new MoolahPlugin(db);
+        Connection conn = db.getDBConnection();
+        conn.setAutoCommit(false);
+        try {
+            BankAccount source = db.openAccount(username1, initialBal1);
+            BankAccount dest = db.openAccount(username2, initialBal2);
+            plugin.doTransfer(event, arguments);
+            String response = event.getResponse();
+            assertTrue(response.length() > 0);
+            assertContains(response, MoolahPlugin.messagePrefix);
+            assertContains(response.toLowerCase(), "invalid");
+        } finally {
+            conn.rollback();
+        }
+    }
   @Test
   public void testTransferBadAmountTooBig() throws Exception {
     FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
@@ -884,6 +908,28 @@ class MoolahPluginTest {
       conn.rollback();
     }
   }
+    @Test
+    public void testSlotsZeroWager() throws Exception {
+        FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+        String username = fakeUser1.getNick();
+        long initialBal = 123484l, wager = 0l;
+        String[] arguments = new String[]{String.format("%d", wager)};
+
+        BankDB db = BankDB.getMemoryInstance();
+        MoolahPlugin plugin = new MoolahPlugin(db);
+        Connection conn = db.getDBConnection();
+        conn.setAutoCommit(false);
+        try {
+            BankAccount acct = db.openAccount(username, initialBal);
+            plugin.doSlots(event, arguments);
+            String response = event.getResponse();
+            assertTrue(response.length() > 0);
+            assertContains(response, MoolahPlugin.messagePrefix);
+            assertContains(response.toLowerCase(), "invalid");
+        } finally {
+            conn.rollback();
+        }
+    }
   @Test
   public void testSlotsTextWager() throws Exception {
     FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
@@ -1164,6 +1210,29 @@ class MoolahPluginTest {
       conn.rollback();
     }
   }
+    @Test
+    public void testHiLoZeroWager() throws Exception {
+        FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");
+        String username = fakeUser1.getNick(), type = "high";
+        long initialBal = 123484l, wager = 0l;
+        String[] arguments = new String[]{type, String.format("%d", wager)};
+
+        BankDB db = BankDB.getMemoryInstance();
+        MoolahPlugin plugin = new MoolahPlugin(db);
+        Connection conn = db.getDBConnection();
+        conn.setAutoCommit(false);
+        try {
+            BankAccount acct = db.openAccount(username, initialBal);
+            HiLoRecord record = plugin.doHiLo(event, arguments);
+            acct = db.getAccountExcept(acct.uid);
+            String response = event.getResponse();
+            assertTrue(response.length() > 0);
+            assertContains(response, MoolahPlugin.messagePrefix);
+            assertContains(response.toLowerCase(), "invalid");
+        } finally {
+            conn.rollback();
+        }
+    }
   @Test
   public void testHiLoTextWager() throws Exception {
     FakeMessageEvent event = new FakeMessageEvent(fakeUser1, fakeUserHost1, "amessage");

@@ -2,6 +2,7 @@ package org.duh102.duhbot.moolah;
 
 import java.sql.*;
 
+import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;

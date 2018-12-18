@@ -3,15 +3,15 @@ package org.duh102.duhbot.moolah;
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
 
+import org.duh102.duhbot.moolah.db.HiLoBetType;
+import org.duh102.duhbot.moolah.db.HiLoRecord;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class HiLoBetTypeTest {
   static final int MIN = HiLoRecord.MIN, MID = HiLoRecord.MID, MAX = HiLoRecord.MAX;
