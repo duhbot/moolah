@@ -1,4 +1,4 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
 import java.util.stream.Stream;
 import java.util.stream.IntStream;
