@@ -1,9 +1,11 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
 import java.sql.*;
 import java.text.ParseException;
 import java.util.stream.Stream;
 
+import org.duh102.duhbot.moolah.BankAccount;
+import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.TransferRecord;
 import org.duh102.duhbot.moolah.exceptions.*;

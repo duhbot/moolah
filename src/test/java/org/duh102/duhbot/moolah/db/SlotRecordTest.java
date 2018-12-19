@@ -1,10 +1,14 @@
-package org.duh102.duhbot.moolah;
+package org.duh102.duhbot.moolah.db;
 
 import java.sql.*;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.duh102.duhbot.moolah.BankAccount;
+import org.duh102.duhbot.moolah.LocalTimestamp;
+import org.duh102.duhbot.moolah.Mine;
+import org.duh102.duhbot.moolah.SlotReelImage;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.SlotRecord;
 import org.duh102.duhbot.moolah.exceptions.*;
