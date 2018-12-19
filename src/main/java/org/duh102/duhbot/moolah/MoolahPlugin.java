@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import com.google.common.collect.ImmutableSortedSet;
@@ -8,6 +9,8 @@ import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.Pair;
 import org.duh102.duhbot.moolah.SlotReelImage;
 import org.duh102.duhbot.moolah.db.*;
+import org.duh102.duhbot.moolah.parsing.ShortcutParser;
+import org.duh102.duhbot.moolah.parsing.exceptions.BadValueException;
 import org.pircbotx.Colors;
 import org.pircbotx.User;
 import org.pircbotx.Channel;
@@ -415,7 +418,10 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     TransferRecord record = null;
     try {
       destName = arguments[0];
-      transferAmount = Long.parseLong(arguments[1]);
+      String[] amountArgs = unprotectedCopyOfRange(arguments, 1,
+              arguments.length);
+      BigInteger temp = ShortcutParser.parseValue(String.join(" ", amountArgs));
+      transferAmount = temp.longValue();
       if( transferAmount == 0 ) {
         throw new ImproperBalanceAmount(transferAmount);
       }
@@ -434,6 +440,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       replyTransferArgumentError(event);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[1]);
+    } catch( BadValueException bve ) {
+      replyInvalidAmount(event, bve.getMessage());
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -457,7 +465,10 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     BankAccount acct = null;
     SlotRecord record = null;
     try {
-      wager = Long.parseLong(arguments[0]);
+      String[] wagerArgs = unprotectedCopyOfRange(arguments, 0,
+              arguments.length);
+      BigInteger temp = ShortcutParser.parseValue(String.join(" ", wagerArgs));
+      wager = temp.longValue();
       if( wager == 0 ) {
         throw new ImproperBalanceAmount(wager);
       }
@@ -481,6 +492,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       replySlotsArgumentError(event);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[0]);
+    } catch( BadValueException bve ) {
+      replyInvalidAmount(event, bve.getMessage());
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -505,7 +518,10 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     HiLoRecord record = null;
     try {
       type = HiLoBetType.fromString(arguments[0]);
-      wager = Long.parseLong(arguments[1]);
+      String[] wagerArgs = unprotectedCopyOfRange(arguments, 1,
+              arguments.length);
+      BigInteger temp = ShortcutParser.parseValue(String.join(" ", wagerArgs));
+      wager = temp.longValue();
       if( wager == 0 ) {
         throw new ImproperBalanceAmount(wager);
       }
@@ -531,6 +547,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       replyHiLoTypeError(event, arguments[0]);
     } catch( NumberFormatException nfe ) {
       replyInvalidAmount(event, arguments[1]);
+    } catch( BadValueException bve ) {
+      replyInvalidAmount(event, bve.getMessage());
     } catch( RecordFailure rf ) {
       replyDBError(event);
       rf.printStackTrace();
@@ -542,6 +560,18 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       replyInsufficientFunds(event, acct, wager);
     }
     return record;
+  }
+
+  public String[] unprotectedCopyOfRange(String[] original, int from, int to) {
+    String[] toRet = new String[to - from];
+    if(toRet.length > 1) {
+      for (int i = 0; i < toRet.length; i++) {
+        toRet[i] = original[from + i];
+      }
+    } else {
+      toRet[0] = original[from];
+    }
+    return toRet;
   }
 
 
