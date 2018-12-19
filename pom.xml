@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>DuhBot</groupId>
   <artifactId>MoolahPluigin</artifactId>
-  <version>1.0.5</version>
+  <version>1.0.6</version>
   <name>Moolah Plugin</name>
   <repositories>
     <repository>
