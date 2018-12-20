@@ -3,7 +3,6 @@ package org.duh102.duhbot.moolah.db.dao;
 import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.TransferRecord;
-import org.duh102.duhbot.moolah.exceptions.InvalidDBConfiguration;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
 import java.sql.*;

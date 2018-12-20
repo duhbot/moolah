@@ -8,6 +8,7 @@ import org.duh102.duhbot.moolah.exceptions.InvalidEnvironment;
 import org.duh102.duhbot.moolah.db.migration.migrations.*;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,21 +22,26 @@ public class MigrationManager {
     public static final DatabaseVersion HIGHEST_VERSION =
             ALL_MIGRATORS.stream().map(Migrator::getVersion).reduce((a, b) -> a.compareTo(b) > 0 ? a : b).get();
 
-    String databaseFile;
     BankDB database;
     DatabaseVersionDAO databaseVersionDAO;
-    public MigrationManager(String databaseFile) throws InvalidDBConfiguration, InvalidEnvironment, RecordFailure {
-        this.databaseFile = databaseFile;
+    public MigrationManager(BankDB database) {
+        this.database = database;
+        databaseVersionDAO = new DatabaseVersionDAO(database);
+    }
+    public MigrationManager(String databaseFile) {
         // we're going to manage the database state ourselves, so don't
         // create the tables by default, and use our intended database file
-        database = BankDB.getDBInstance(databaseFile);
-        databaseVersionDAO = new DatabaseVersionDAO(database);
+        this(BankDB.getDBInstance(databaseFile));
     }
 
     public List<Migrator> getQuickestMigrationPath(DatabaseVersion targetVersion) {
         List<Migrator> plan = new ArrayList<>();
         DatabaseVersion currentVersion = getCurrentVersion();
         return plan;
+    }
+
+    public void createOrUpgradeToLatest() throws RecordFailure {
+        Connection conn = database.getDBConnection();
     }
 
     public DatabaseVersion getCurrentVersion() {

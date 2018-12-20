@@ -9,6 +9,8 @@ import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.Pair;
 import org.duh102.duhbot.moolah.SlotReelImage;
 import org.duh102.duhbot.moolah.db.*;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
+import org.duh102.duhbot.moolah.db.migration.MigrationManager;
 import org.duh102.duhbot.moolah.parsing.ShortcutParser;
 import org.duh102.duhbot.moolah.parsing.exceptions.BadValueException;
 import org.pircbotx.Colors;
@@ -36,7 +38,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   public MoolahPlugin() {
     try {
       db = BankDB.getDBInstance();
-    } catch( InvalidDBConfiguration | InvalidEnvironment idc ) {
+      MigrationManager manager = new MigrationManager(db);
+      manager.createOrUpgradeToLatest();
+    } catch( RecordFailure idc ) {
       idc.printStackTrace();
       db = null;
     }
@@ -238,7 +242,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     if( ((double)wager) / account.balance < 0.9 )
       return false;
     try {
-      if( ((double)wager) / db.getAccountTotal() < 0.4 )
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      if( ((double)wager) / accountDAO.getAccountTotal() < 0.4 )
         return false;
     } catch( RecordFailure rf ) {
       rf.printStackTrace();
@@ -342,7 +347,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         username = getUserReg(((MessageEvent)event).getChannel(), user);
       else
         username = getUserReg(event, user);
-      acct = db.openAccount(username);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      acct = accountDAO.openAccount(username);
       replyAccountOpened(event, acct);
     } catch( InsufficientPrivilegesException ipe ) {
       replyUserPermissionsError(event);
@@ -366,7 +372,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         username = getUserReg(((MessageEvent)event).getChannel(), user);
       else
         username = getUserReg(event, user);
-      BankAccount account = db.getAccountExcept(username);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount account = accountDAO.getAccountExcept(username);
       record = MineRecord.recordMineAttempt(db, account);
       replyMineAttempt(event, account, record);
     } catch( InsufficientPrivilegesException ipe ) {
@@ -396,7 +403,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         else
           username = getUserReg(event, user);
       }
-      BankAccount account = db.getAccountExcept(username);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount account = accountDAO.getAccountExcept(username);
       replyBalance(event, account);
     } catch( InsufficientPrivilegesException ipe ) {
       replyUserPermissionsError(event);
@@ -430,8 +438,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         sourceName = getUserReg(((MessageEvent)event).getChannel(), user);
       else
         sourceName = getUserReg(event, user);
-      source = db.getAccountExcept(sourceName);
-      dest = db.getAccountExcept(destName);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      source = accountDAO.getAccountExcept(sourceName);
+      dest = accountDAO.getAccountExcept(destName);
       record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       replyTransfer(event, source, dest, record);
     } catch( InsufficientPrivilegesException ipe ) {
@@ -477,7 +486,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         username = getUserReg(((MessageEvent)event).getChannel(), user);
       else
         username = getUserReg(event, user);
-      acct = db.getAccountExcept(username);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      acct = accountDAO.getAccountExcept(username);
       record = SlotRecord.recordSlotAttempt(db, acct, wager);
       if( (record.multiplier == 0 || SlotRecord.isJackpot(record.multiplier)) && isSignificantWager(acct, wager) ) {
         if( record.multiplier == 0 )
@@ -530,7 +540,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
         username = getUserReg(((MessageEvent)event).getChannel(), user);
       else
         username = getUserReg(event, user);
-      acct = db.getAccountExcept(username);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      acct = accountDAO.getAccountExcept(username);
       record = HiLoRecord.recordBetHiLo(db, acct, type, wager);
       if( (record.multiplier == 0 || HiLoRecord.isJackpot(record.multiplier)) && isSignificantWager(acct, wager) ) {
         if( record.multiplier == 0 )

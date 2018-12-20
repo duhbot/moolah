@@ -5,6 +5,8 @@ import java.sql.*;
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.Mine;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
+import org.duh102.duhbot.moolah.db.dao.MineRecordDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class MineRecord {
@@ -56,6 +58,8 @@ public class MineRecord {
   public static MineRecord recordMineAttempt(BankDB db, BankAccount account) throws MineAttemptTooSoon, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = null;
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      MineRecordDAO mineRecordDAO = new MineRecordDAO(db);
       try {
         preAttempt = new BankAccount(account);
       } catch( ImproperBalanceAmount iba ) {
@@ -63,9 +67,8 @@ public class MineRecord {
       }
       try {
         MineRecord record = mineAttempt(account);
-        Connection conn = db.getDBConnection();
-        db.pushAccount(account);
-        return db.recordMineOutcome(record);
+        accountDAO.pushAccount(account);
+        return mineRecordDAO.recordMineOutcome(record);
       } catch( RecordFailure | AccountDoesNotExist e ) {
         try {
           account.revertTo(preAttempt);

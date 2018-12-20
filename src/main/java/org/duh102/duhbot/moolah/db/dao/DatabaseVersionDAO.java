@@ -2,7 +2,6 @@ package org.duh102.duhbot.moolah.db.dao;
 
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.migration.DatabaseVersion;
-import org.duh102.duhbot.moolah.exceptions.InvalidDBConfiguration;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
 import java.sql.*;

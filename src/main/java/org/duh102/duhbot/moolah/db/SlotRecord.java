@@ -10,6 +10,8 @@ import java.util.regex.Matcher;
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.SlotReelImage;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
+import org.duh102.duhbot.moolah.db.dao.SlotRecordDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class SlotRecord {
@@ -91,6 +93,8 @@ public class SlotRecord {
   public static SlotRecord recordSlotAttempt(BankDB db, BankAccount account, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = null;
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      SlotRecordDAO slotRecordDAO = new SlotRecordDAO(db);
       try {
         preAttempt = new BankAccount(account);
       } catch( ImproperBalanceAmount iba ) {
@@ -98,9 +102,8 @@ public class SlotRecord {
       }
       try {
         SlotRecord record = slotAttempt(account, wager);
-        Connection conn = db.getDBConnection();
-        db.pushAccount(account);
-        return db.recordSlotRecord(record);
+        accountDAO.pushAccount(account);
+        return slotRecordDAO.recordSlotRecord(record);
       } catch( RecordFailure | AccountDoesNotExist e ) {
         try {
           account.revertTo(preAttempt);

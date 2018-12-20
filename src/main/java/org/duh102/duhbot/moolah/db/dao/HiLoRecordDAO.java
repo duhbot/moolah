@@ -4,7 +4,6 @@ import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.HiLoBetType;
 import org.duh102.duhbot.moolah.db.HiLoRecord;
-import org.duh102.duhbot.moolah.exceptions.InvalidDBConfiguration;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
 import java.sql.*;

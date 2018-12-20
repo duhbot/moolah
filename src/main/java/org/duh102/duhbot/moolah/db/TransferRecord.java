@@ -4,6 +4,8 @@ import java.sql.*;
 
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
+import org.duh102.duhbot.moolah.db.dao.TransferRecordDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class TransferRecord {
@@ -51,12 +53,13 @@ public class TransferRecord {
       } catch( ImproperBalanceAmount iba ) {
         iba.printStackTrace();
       }
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      TransferRecordDAO transferRecordDAO = new TransferRecordDAO(db);
       try {
         TransferRecord record = makeTransfer(source, destination, amount);
-        Connection conn = db.getDBConnection();
-        db.pushAccount(source);
-        db.pushAccount(destination);
-        return db.recordTransfer(record);
+        accountDAO.pushAccount(source);
+        accountDAO.pushAccount(destination);
+        return transferRecordDAO.recordTransfer(record);
       } catch( RecordFailure | AccountDoesNotExist e ) {
         try {
           source.revertTo(preAttemptSource);

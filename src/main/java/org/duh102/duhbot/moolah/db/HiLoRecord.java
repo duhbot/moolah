@@ -5,6 +5,8 @@ import java.util.Random;
 
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
+import org.duh102.duhbot.moolah.db.dao.HiLoRecordDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 public class HiLoRecord {
@@ -69,11 +71,12 @@ public class HiLoRecord {
   public static HiLoRecord recordBetHiLo(BankDB db, BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = new BankAccount(account);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      HiLoRecordDAO hiLoRecordDAO = new HiLoRecordDAO(db);
       try {
         HiLoRecord record = betHiLo(account, hiLo, wager);
-        Connection conn = db.getDBConnection();
-        db.pushAccount(account);
-        return db.recordHiLoRecord(record);
+        accountDAO.pushAccount(account);
+        return hiLoRecordDAO.recordHiLoRecord(record);
       } catch( RecordFailure | AccountDoesNotExist e ) {
         account.revertTo(preAttempt);
         throw e;

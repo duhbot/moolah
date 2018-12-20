@@ -2,7 +2,6 @@ package org.duh102.duhbot.moolah.db.migration.migrations;
 
 import org.duh102.duhbot.moolah.db.migration.DatabaseVersion;
 import org.duh102.duhbot.moolah.db.migration.Migrator;
-import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
 import java.sql.*;
 import java.util.List;

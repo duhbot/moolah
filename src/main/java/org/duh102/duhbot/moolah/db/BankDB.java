@@ -34,13 +34,13 @@ public class BankDB {
     return instance;
   }
 
-  public static BankDB getDBInstance() throws InvalidDBConfiguration, InvalidEnvironment {
+  public static BankDB getDBInstance() {
     return getInstance(DEFAULT_DB);
   }
-  public static BankDB getDBInstance(String dbFile) throws InvalidDBConfiguration, InvalidEnvironment {
+  public static BankDB getDBInstance(String dbFile) {
     return getInstance(dbFile);
   }
-  public static BankDB getMemoryInstance() throws InvalidDBConfiguration, InvalidEnvironment {
+  public static BankDB getMemoryInstance() {
     return getInstance(":memory:");
   }
 
