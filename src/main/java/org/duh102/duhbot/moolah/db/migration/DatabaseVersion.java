@@ -1,6 +1,5 @@
 package org.duh102.duhbot.moolah.db.migration;
 
-import org.duh102.duhbot.moolah.Pair;
 import org.duh102.duhbot.moolah.exceptions.InvalidInputError;
 
 import java.util.regex.Matcher;
@@ -34,7 +33,21 @@ public class DatabaseVersion implements Comparable<DatabaseVersion> {
 
     @Override
     public int compareTo(DatabaseVersion other) {
-        return 0;
+        int major = this.major - other.major,
+                minor = this.minor - other.minor,
+                patch = this.patch - other.patch;
+        if( major == 0 && major == minor && minor == patch ) {
+            return 0;
+        }
+        if( major != 0 )
+            return major;
+        if( minor != 0 )
+            return minor;
+        return patch;
+    }
+
+    public boolean equals(Object other) {
+        return other instanceof DatabaseVersion && compareTo((DatabaseVersion)other) == 0;
     }
 
     public String toString() {

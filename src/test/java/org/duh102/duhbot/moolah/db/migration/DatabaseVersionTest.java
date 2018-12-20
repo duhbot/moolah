@@ -30,6 +30,8 @@ public class DatabaseVersionTest {
     private static Stream<Arguments> orderingSource() {
         return Stream.of(
                 Arguments.of("1.1.1", "1.1.1", 0),
+                Arguments.of("1.2.3", "1.2.3", 0),
+                Arguments.of("3.2.1", "3.2.1", 0),
                 Arguments.of("1.1.2", "1.1.1", 1),
                 Arguments.of("1.1.1", "1.1.2", -1),
                 Arguments.of("1.2.1", "1.1.1", 1),
