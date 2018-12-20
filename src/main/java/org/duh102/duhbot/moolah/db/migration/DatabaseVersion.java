@@ -12,6 +12,8 @@ public class DatabaseVersion implements Comparable<DatabaseVersion> {
             "(?<minor>[1-9][0-9]*|0)\\." +
             "(?<patch>[1-9][0-9]*|0)"
     );
+    public static final DatabaseVersion UNVERSIONED = new DatabaseVersion(
+            0,0,0);
 
     public DatabaseVersion(int major, int minor, int patch) {
         this.major = major;
