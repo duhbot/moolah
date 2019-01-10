@@ -9,6 +9,7 @@ import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.Mine;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.MineRecord;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -130,10 +131,11 @@ class MineRecordTest {
     conn.setAutoCommit(false);
     Timestamp now = LocalTimestamp.now();
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       MineRecord record = MineRecord.recordMineAttempt(db, acct);
       assertEquals(startFunds + record.yield, acct.balance);
-      BankAccount stored = db.getAccountExcept(acct.uid);
+      BankAccount stored = accountDAO.getAccountExcept(acct.uid);
       assertEquals(stored, acct);
       assertTrue(stored.lastMined.getTime() - now.getTime() <= 1000);
     } finally {
@@ -147,7 +149,8 @@ class MineRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test");
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test");
       MineRecord record = MineRecord.recordMineAttempt(db, acct);
       assertThrows(MineAttemptTooSoon.class, () -> {
         MineRecord record2 = MineRecord.recordMineAttempt(db, acct);

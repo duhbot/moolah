@@ -5,6 +5,7 @@ import java.sql.*;
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,7 +38,8 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount(acctName);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount(acctName);
       assertEquals(startingBalance, acct.balance);
       assertEquals(acctName, acct.user);
       Timestamp now = LocalTimestamp.now();
@@ -56,7 +58,8 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount(acctName,  startingBalance);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount(acctName,  startingBalance);
       assertEquals(startingBalance, acct.balance);
       assertEquals(acctName, acct.user);
       Timestamp now = LocalTimestamp.now();
@@ -73,9 +76,10 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      db.openAccount("test");
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      accountDAO.openAccount("test");
       assertThrows(AccountAlreadyExists.class, () -> {
-        db.openAccount("test");
+        accountDAO.openAccount("test");
       });
     } finally {
       conn.rollback();
@@ -87,10 +91,11 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acctE = db.getAccount("test");
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acctE = accountDAO.getAccount("test");
       assertTrue(acctE == null);
-      BankAccount acct = db.openAccount("test");
-      acctE = db.getAccount("test");
+      BankAccount acct = accountDAO.openAccount("test");
+      acctE = accountDAO.getAccount("test");
       assertEquals(acct, acctE);
     } finally {
       conn.rollback();
@@ -102,11 +107,12 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
       assertThrows(AccountDoesNotExist.class, () -> {
-        db.getAccountExcept("test");
+        accountDAO.getAccountExcept("test");
       });
-      BankAccount acct = db.openAccount("test");
-      BankAccount acctE = db.getAccountExcept("test");
+      BankAccount acct = accountDAO.openAccount("test");
+      BankAccount acctE = accountDAO.getAccountExcept("test");
       assertEquals(acct, acctE);
     } finally {
       conn.rollback();
@@ -118,9 +124,10 @@ class BankDBTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", 100l);
-      db.pushAccount(acct);
-      BankAccount newAcct = db.getAccountExcept(acct.uid);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", 100l);
+      accountDAO.pushAccount(acct);
+      BankAccount newAcct = accountDAO.getAccountExcept(acct.uid);
       assertEquals(acct, newAcct);
     } finally {
       conn.rollback();

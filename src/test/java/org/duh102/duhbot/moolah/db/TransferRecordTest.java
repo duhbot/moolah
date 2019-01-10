@@ -8,6 +8,7 @@ import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.TransferRecord;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,13 +111,14 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount source = db.openAccount("auser", sourceFunds);
-      BankAccount dest = db.openAccount("buser", destFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount source = accountDAO.openAccount("auser", sourceFunds);
+      BankAccount dest = accountDAO.openAccount("buser", destFunds);
       TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       assertEquals(sourceFunds - transferAmount, source.balance);
       assertEquals(destFunds + transferAmount, dest.balance);
-      BankAccount sourceStored = db.getAccountExcept(source.uid);
-      BankAccount destStored = db.getAccountExcept(dest.uid);
+      BankAccount sourceStored = accountDAO.getAccountExcept(source.uid);
+      BankAccount destStored = accountDAO.getAccountExcept(dest.uid);
       assertEquals(source, sourceStored);
       assertEquals(dest, destStored);
     } finally {
@@ -130,8 +132,9 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount source = db.openAccount("auser", sourceFunds);
-      BankAccount dest = db.openAccount("buser", destFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount source = accountDAO.openAccount("auser", sourceFunds);
+      BankAccount dest = accountDAO.openAccount("buser", destFunds);
       assertThrows(InsufficientFundsException.class, () -> {
         TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       });
@@ -146,8 +149,9 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount source = db.openAccount("auser", sourceFunds);
-      BankAccount dest = db.openAccount("buser", destFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount source = accountDAO.openAccount("auser", sourceFunds);
+      BankAccount dest = accountDAO.openAccount("buser", destFunds);
       assertThrows(ImproperBalanceAmount.class, () -> {
         TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       });
@@ -162,7 +166,8 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount source = accountDAO.openAccount("auser", sourceFunds);
       assertThrows(SameAccountException.class, () -> {
         TransferRecord record = TransferRecord.recordTransfer(db, source, source, transferAmount);
       });
@@ -177,8 +182,9 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
       BankAccount source = new BankAccount(0l, "auser", sourceFunds, LocalTimestamp.now());
-      BankAccount dest = db.openAccount("buser", destFunds);
+      BankAccount dest = accountDAO.openAccount("buser", destFunds);
       assertThrows(AccountDoesNotExist.class, () -> {
         TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);
       });
@@ -193,7 +199,8 @@ class TransferRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount source = db.openAccount("auser", sourceFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount source = accountDAO.openAccount("auser", sourceFunds);
       BankAccount dest = new BankAccount(0l, "buser", destFunds, LocalTimestamp.now());
       assertThrows(AccountDoesNotExist.class, () -> {
         TransferRecord record = TransferRecord.recordTransfer(db, source, dest, transferAmount);

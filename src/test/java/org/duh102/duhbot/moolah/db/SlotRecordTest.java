@@ -11,6 +11,7 @@ import org.duh102.duhbot.moolah.Mine;
 import org.duh102.duhbot.moolah.SlotReelImage;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.SlotRecord;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -187,10 +188,11 @@ class SlotRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
       assertEquals(startFunds - wager + record.payout, acct.balance);
-      BankAccount stored = db.getAccountExcept(acct.uid);
+      BankAccount stored = accountDAO.getAccountExcept(acct.uid);
       assertEquals(stored, acct);
     } finally {
       conn.rollback();
@@ -204,7 +206,8 @@ class SlotRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       assertThrows(InsufficientFundsException.class, () -> {
         SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
       });
@@ -220,7 +223,8 @@ class SlotRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       assertThrows(ImproperBalanceAmount.class, () -> {
         SlotRecord record = SlotRecord.recordSlotAttempt(db, acct, wager);
       });

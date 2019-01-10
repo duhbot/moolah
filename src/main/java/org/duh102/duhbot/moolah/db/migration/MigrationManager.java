@@ -50,7 +50,9 @@ public class MigrationManager {
             version = databaseVersionDAO.getVersion();
         } catch (RecordFailure recordFailure) {
             Throwable cause = recordFailure.getCause();
-            if( cause instanceof SQLException && ((SQLException)cause).getErrorCode() ==  942) {
+            // I hate this but as far as I've been able to verify you can't
+            // get anything better out of sqlite
+            if( cause instanceof SQLException && cause.getMessage().contains("no such table")) {
                 version = DatabaseVersion.UNVERSIONED;
             } else {
                 recordFailure.printStackTrace();

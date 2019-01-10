@@ -9,6 +9,7 @@ import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.HiLoBetType;
 import org.duh102.duhbot.moolah.db.HiLoRecord;
+import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
 import org.duh102.duhbot.moolah.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -144,10 +145,11 @@ class HiLoRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       HiLoRecord record = HiLoRecord.recordBetHiLo(db, acct, HiLoBetType.HIGH, wager);
       assertEquals(startFunds - wager + record.payout, acct.balance);
-      BankAccount stored = db.getAccountExcept(acct.uid);
+      BankAccount stored = accountDAO.getAccountExcept(acct.uid);
       assertEquals(stored, acct);
     } finally {
       conn.rollback();
@@ -161,12 +163,13 @@ class HiLoRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
-      BankAccount acct = db.openAccount("test", startFunds);
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
+      BankAccount acct = accountDAO.openAccount("test", startFunds);
       assertThrows(InsufficientFundsException.class, () -> {
         HiLoRecord record = HiLoRecord.recordBetHiLo(db, acct, HiLoBetType.HIGH, wager);
       });
       assertEquals(startFunds, acct.balance);
-      BankAccount stored = db.getAccountExcept(acct.uid);
+      BankAccount stored = accountDAO.getAccountExcept(acct.uid);
       assertEquals(stored, acct);
     } finally {
       conn.rollback();
@@ -180,13 +183,14 @@ class HiLoRecordTest {
     Connection conn = db.getDBConnection();
     conn.setAutoCommit(false);
     try {
+      BankAccountDAO accountDAO = new BankAccountDAO(db);
       BankAccount acct = new BankAccount(0l, "test", startFunds, LocalTimestamp.now());
       assertThrows(AccountDoesNotExist.class, () -> {
         HiLoRecord record = HiLoRecord.recordBetHiLo(db, acct, HiLoBetType.HIGH, wager);
       });
       assertEquals(startFunds, acct.balance);
       assertThrows(AccountDoesNotExist.class, () -> {
-        BankAccount stored = db.getAccountExcept(acct.uid);
+        BankAccount stored = accountDAO.getAccountExcept(acct.uid);
       });
     } finally {
       conn.rollback();
