@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>DuhBot</groupId>
   <artifactId>MoolahPluigin</artifactId>
-  <version>1.0.5</version>
+  <version>1.0.6</version>
   <name>Moolah Plugin</name>
   <repositories>
     <repository>
@@ -24,17 +24,49 @@
         <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>2.27.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
         <groupId>com.github.duhbot</groupId>
         <artifactId>duhbot</artifactId>
         <version>v1.0.5</version>
     </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>5.4.2.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>5.4.2.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp</artifactId>
+      <version>0.8.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp-provider</artifactId>
+      <version>0.7.1.RELEASE</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.gwenn</groupId>
+      <artifactId>sqlite-dialect</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-  <properties>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-    <maven.compiler.testSource>1.8</maven.compiler.testSource>
-  </properties>
   <build>
     <plugins>
       <plugin>

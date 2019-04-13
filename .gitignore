@@ -1,7 +1,11 @@
+## binary stuff
 /target/
 .*.swp
 *.class
-#ignore stray databases
+
+## ignore stray databases
 *.db
 
+## intellij stuff
 /.idea
+*.iml
