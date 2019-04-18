@@ -33,6 +33,7 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   public static final long rateLimit = 5*60*1000;
 
   BankDB db;
+
   public MoolahPlugin() {
     try {
       db = BankDB.getDBInstance();
