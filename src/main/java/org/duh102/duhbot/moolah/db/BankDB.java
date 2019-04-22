@@ -2,26 +2,37 @@ package org.duh102.duhbot.moolah.db;
 
 import java.sql.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.text.ParseException;
 
-import org.duh102.duhbot.moolah.*;
-import org.duh102.duhbot.moolah.db.dao.*;
-import org.duh102.duhbot.moolah.db.migration.MigrationManager;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
 import org.sqlite.SQLiteConfig;
 
 import org.duh102.duhbot.moolah.exceptions.*;
+import org.sqlite.SQLiteDataSource;
+
+import javax.sql.DataSource;
 
 public class BankDB {
   private static final String DEFAULT_DB = "moolah.db";
+  private static final String MEMORY_DB = ":memory:";
+  private static final String JDBC_PREFIX = "jdbc:sqlite:";
   private static ConcurrentHashMap<String, BankDB> instanceMap;
   private String myDBFile;
   private Connection connection = null;
+  private DataSource datasource;
   static {
     instanceMap = new ConcurrentHashMap<>();
   }
 
   private BankDB(String dbFile) {
     myDBFile = dbFile;
+    HikariConfig hConfig = new HikariConfig();
+    hConfig.setDataSourceClassName("org.sqlite.SQLiteDataSource");
+    hConfig.addDataSourceProperty("enforceForeignKeys", true);
+    hConfig.setJdbcUrl(getDBURL());
+    HikariDataSource hkds = new HikariDataSource(hConfig);
+    datasource = hkds;
   }
 
   private static BankDB getInstance(String dbFile) {
@@ -38,24 +49,27 @@ public class BankDB {
     return getInstance(DEFAULT_DB);
   }
   public static BankDB getDBInstance(String dbFile) {
-    return getInstance(dbFile);
+    BankDB db = getInstance(dbFile);
+    return db;
   }
   public static BankDB getMemoryInstance() {
-    return getInstance(":memory:");
+    return getInstance(MEMORY_DB);
+  }
+
+  public String getDBURL() {
+    return JDBC_PREFIX + myDBFile;
   }
 
   public synchronized Connection makeDBConnection() throws InvalidEnvironment, InvalidDBConfiguration, DBAlreadyConnected {
     if( connection != null )
       throw new DBAlreadyConnected();
     try {
-      Class.forName("org.sqlite.JDBC");
-    } catch( java.lang.ClassNotFoundException cnfe ) {
-      throw new InvalidEnvironment(cnfe);
-    }
-    try {
-      SQLiteConfig config = new SQLiteConfig();
-      config.enforceForeignKeys(true);
-      connection = DriverManager.getConnection("jdbc:sqlite:" + myDBFile, config.toProperties());
+      // Create the Flyway instance and point it to the database
+      Flyway flyway =
+              Flyway.configure().dataSource(datasource).load();
+      // Start the migration
+      flyway.migrate();
+      connection = datasource.getConnection();
       return connection;
     } catch(SQLException sqle) {
       throw new InvalidDBConfiguration(sqle);

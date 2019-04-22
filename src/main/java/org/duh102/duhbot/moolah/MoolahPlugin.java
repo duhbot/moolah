@@ -10,7 +10,6 @@ import org.duh102.duhbot.moolah.Pair;
 import org.duh102.duhbot.moolah.SlotReelImage;
 import org.duh102.duhbot.moolah.db.*;
 import org.duh102.duhbot.moolah.db.dao.BankAccountDAO;
-import org.duh102.duhbot.moolah.db.migration.MigrationManager;
 import org.duh102.duhbot.moolah.parsing.ShortcutParser;
 import org.duh102.duhbot.moolah.parsing.exceptions.BadValueException;
 import org.pircbotx.Colors;
@@ -38,9 +37,7 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   public MoolahPlugin() {
     try {
       db = BankDB.getDBInstance();
-      MigrationManager manager = new MigrationManager(db);
-      manager.createOrUpgradeToLatest();
-    } catch( RecordFailure idc ) {
+    } catch( Exception idc ) {
       idc.printStackTrace();
       db = null;
     }
