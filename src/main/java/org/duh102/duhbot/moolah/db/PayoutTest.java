@@ -8,9 +8,9 @@ import java.math.BigInteger;
 public class PayoutTest {
   public static void main(String args[]) {
     int iterations = 10*1000*1000;
-    BigInteger resetBalance = new BigInteger("1000000")
-    long wager = 1000l;
-    double expectedMultiplier = 0, lossChance = 0;
+    BigInteger resetBalance = new BigInteger("1000000");
+    BigInteger wager = new BigInteger("1000");
+    double expectedMultiplier = 0, lossChance;
     int completeLosses = 0;
     BankAccount acct = null;
     try {
