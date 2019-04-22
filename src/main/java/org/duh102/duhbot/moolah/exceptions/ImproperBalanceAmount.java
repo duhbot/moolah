@@ -1,5 +1,7 @@
 package org.duh102.duhbot.moolah.exceptions;
 
+import java.math.BigInteger;
+
 public class ImproperBalanceAmount extends Exception {
   public ImproperBalanceAmount() {
     super();
@@ -13,16 +15,22 @@ public class ImproperBalanceAmount extends Exception {
   public ImproperBalanceAmount(Throwable cause) {
     super(cause);
   }
+  public ImproperBalanceAmount(BigInteger invalidValue) {
+    super(invalidValue.toString());
+  }
+  public ImproperBalanceAmount(BigInteger invalidValue, Throwable cause) {
+    super(invalidValue.toString(), cause);
+  }
   public ImproperBalanceAmount(long invalidValue) {
-    super(String.format("%d", invalidValue));
+    this(new BigInteger(String.format("%d", invalidValue)));
   }
   public ImproperBalanceAmount(int invalidValue) {
-    super(String.format("%d", invalidValue));
+    this(new BigInteger(String.format("%d", invalidValue)));
   }
   public ImproperBalanceAmount(long invalidValue, Throwable cause) {
-    super(String.format("%d", invalidValue), cause);
+    this(new BigInteger(String.format("%d", invalidValue)), cause);
   }
   public ImproperBalanceAmount(int invalidValue, Throwable cause) {
-    super(String.format("%d", invalidValue), cause);
+    this(new BigInteger(String.format("%d", invalidValue)), cause);
   }
 }

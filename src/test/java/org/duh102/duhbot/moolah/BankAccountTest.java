@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah;
 
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.text.ParseException;
 
@@ -93,6 +94,27 @@ class BankAccountTest {
     assertThrows(ImproperBalanceAmount.class, () -> {
         a.subFunds(-1l);
     });
+  }
+
+  /*
+   * BigInt balance tests
+   */
+
+  @Test
+  public void testBigIntBalance() throws Exception {
+    BankAccount a = new BankAccount(0l, "user", new BigInteger("100"), defTime);
+    a.addFunds(1000);
+    assertEquals(new BigInteger("1100"), a.balance, "Balance should equal and " +
+            "be a biginteger");
+  }
+
+  @Test
+  public void testBigIntBalanceLong() throws Exception {
+    BankAccount a = new BankAccount(0l, "user", new BigInteger(
+            "1000000000000000000000000000000000000000000"), defTime);
+    a.addFunds(new BigInteger("1000000000000000"));
+    assertEquals(new BigInteger("1000000000000000000000000001000000000000000"), a.balance, "Balance should be equal and " +
+            "be a value much larger than a long can handle");
   }
 
   /*

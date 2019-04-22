@@ -3,10 +3,13 @@ package org.duh102.duhbot.moolah.db;
 import org.duh102.duhbot.moolah.BankAccount;
 import org.duh102.duhbot.moolah.exceptions.*;
 
+import java.math.BigInteger;
+
 public class PayoutTest {
   public static void main(String args[]) {
     int iterations = 10*1000*1000;
-    long resetBalance = 1000000l, wager = 1000l;
+    BigInteger resetBalance = new BigInteger("1000000")
+    long wager = 1000l;
     double expectedMultiplier = 0, lossChance = 0;
     int completeLosses = 0;
     BankAccount acct = null;
