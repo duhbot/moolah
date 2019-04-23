@@ -5,6 +5,7 @@ import org.duh102.duhbot.moolah.LocalTimestamp;
 import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.exceptions.*;
 
+import java.math.BigInteger;
 import java.sql.*;
 import java.text.ParseException;
 
@@ -15,10 +16,10 @@ public class BankAccountDAO {
     }
 
     public BankAccount openAccount(String user) throws AccountAlreadyExists, RecordFailure {
-        return openAccount(user, 0l);
+        return openAccount(user, BigInteger.ZERO);
     }
 
-    public BankAccount openAccount(String user, long balance) throws AccountAlreadyExists, RecordFailure {
+    public BankAccount openAccount(String user, BigInteger balance) throws AccountAlreadyExists, RecordFailure {
         Connection conn = database.getDBConnection();
         BankAccount account = null;
         account = getAccount(user);
@@ -28,7 +29,7 @@ public class BankAccountDAO {
         try {
             PreparedStatement stat = conn.prepareStatement("INSERT INTO bankAccount (user, balance) VALUES (?, ?);", Statement.RETURN_GENERATED_KEYS);
             stat.setString(1, user.toLowerCase());
-            stat.setLong(2, balance);
+            stat.setString(2, balance.toString());
             stat.executeUpdate();
             ResultSet rs = stat.getGeneratedKeys();
             if (rs.next()) {
@@ -65,7 +66,7 @@ public class BankAccountDAO {
             ResultSet rs = stat.executeQuery();
             while (rs.next()) {
                 long uid = rs.getLong("uid");
-                long balance = rs.getLong("balance");
+                BigInteger balance = new BigInteger(rs.getString("balance"));
                 Timestamp lastMined = null;
                 try {
                     lastMined = LocalTimestamp.parse(rs.getString("lastMined"));
@@ -104,7 +105,7 @@ public class BankAccountDAO {
             ResultSet rs = stat.executeQuery();
             while (rs.next()) {
                 String user = rs.getString("user");
-                long balance = rs.getLong("balance");
+                BigInteger balance = new BigInteger(rs.getString("balance"));
                 Timestamp lastMined = null;
                 try {
                     lastMined = LocalTimestamp.parse(rs.getString("lastMined"));
@@ -134,7 +135,7 @@ public class BankAccountDAO {
         try {
             PreparedStatement stat = conn.prepareStatement("UPDATE bankAccount SET user = ?, balance = ?, lastMined = ? WHERE uid = ?;");
             stat.setString(1, account.user);
-            stat.setLong(2, account.balance);
+            stat.setString(2, account.balance.toString());
             stat.setString(3, LocalTimestamp.format(account.lastMined));
             stat.setLong(4, account.uid);
             stat.executeUpdate();
@@ -146,16 +147,20 @@ public class BankAccountDAO {
 
 
     // Returns the sum total of all accounts on record
-    public long getAccountTotal() throws RecordFailure {
+    public BigInteger getAccountTotal() throws RecordFailure {
         Connection conn = database.getDBConnection();
         try {
-            PreparedStatement stat = conn.prepareStatement("SELECT sum(balance) AS total FROM bankAccount;");
+            BigInteger accumulator = new BigInteger("0");
+            PreparedStatement stat = conn.prepareStatement("SELECT balance" +
+                    " FROM bankAccount;");
             ResultSet rs = stat.executeQuery();
             try {
-                if (rs.next()) {
-                    return rs.getLong("total");
-                } else
-                    throw new RecordFailure("Could not get total");
+                while(rs.next()) {
+                    BigInteger accountBalance = new BigInteger(rs.getString(
+                            "balance"));
+                    accumulator.add(accountBalance);
+                }
+                return accumulator;
             } finally {
                 rs.close();
             }

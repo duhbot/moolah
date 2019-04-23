@@ -1,5 +1,8 @@
 package org.duh102.duhbot.moolah.db;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,12 +75,14 @@ public class SlotRecord {
       && this.timestamp.equals(other.timestamp);
   }
 
-  public static SlotRecord slotAttempt(BankAccount account, long wager) throws InsufficientFundsException, ImproperBalanceAmount {
+  public static SlotRecord slotAttempt(BankAccount account, BigInteger wager) throws InsufficientFundsException, ImproperBalanceAmount {
     account.subFunds(wager);
     Timestamp now = LocalTimestamp.now();
     SlotReelImage[] reels = getSlotImages();
     double multiplier = getImagesMultiplier(reels);
-    long payout = Math.abs(Math.round(Math.ceil(wager * multiplier)));
+    BigInteger payout =
+            (new BigDecimal(multiplier)).multiply(new BigDecimal(wager)).round(MathContext.UNLIMITED).abs().toBigInteger();
+    //Math.abs(Math.round(Math.ceil(wager * multiplier)));
     try {
       account.addFunds(payout);
     } catch( ImproperBalanceAmount iba ) {

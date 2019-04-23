@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah.db;
 
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.Random;
 
@@ -46,7 +47,8 @@ public class HiLoRecord {
       && this.wager == other.wager && this.payout == other.payout
       && this.multiplier == other.multiplier && this.timestamp.equals(other.timestamp);
   }
-  public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount {
+  public static HiLoRecord betHiLo(BankAccount account, HiLoBetType hiLo,
+                                   BigInteger wager) throws InsufficientFundsException, ImproperBalanceAmount {
     account.subFunds(wager);
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
