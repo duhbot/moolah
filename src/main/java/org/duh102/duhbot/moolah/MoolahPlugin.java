@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -93,6 +94,11 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   public static void replyInsufficientFunds(GenericMessageEvent event, BankAccount acct, long required) {
     respondEvent(event, String.format("You have insufficient funds to complete that transaction; you have %1$s%2$,d, you need %1$s%3$,d", currSymbol, acct.balance, required));
   }
+  public static void replyInsufficientFunds(GenericMessageEvent event,
+                                            BankAccount acct,
+                                            BigInteger required) {
+    respondEvent(event, String.format("You have insufficient funds to complete that transaction; you have %1$s%2$,d, you need %1$s%3$,d", currSymbol, acct.balance, required));
+  }
 
   public static void replyNoAccount(GenericMessageEvent event, String username) {
     respondEvent(event, String.format("User '%s' does not have a registered bank account", username));
@@ -128,8 +134,11 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   public static void replyInvalidAmount(GenericMessageEvent event, String amountStr) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %s", amountStr));
   }
-
   public static void replyInvalidAmount(GenericMessageEvent event, long amount) {
+    respondEvent(event, String.format("Invalid amount, must be a positive integer: %,d", amount));
+  }
+  public static void replyInvalidAmount(GenericMessageEvent event,
+                                        BigInteger amount) {
     respondEvent(event, String.format("Invalid amount, must be a positive integer: %,d", amount));
   }
 
@@ -150,7 +159,7 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
   }
 
   public static void replyHiLo(GenericMessageEvent event, BankAccount acct, HiLoRecord record) {
-    boolean won = record.payout > 0l;
+    boolean won = record.payout.compareTo(BigInteger.ZERO) > 0;
     String comparison = "<>";
     switch(record.hiLo) {
       case HIGH:
@@ -233,14 +242,14 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
     throw new InsufficientPrivilegesException();
   }
 
-  public boolean isSignificantWager(BankAccount account, long wager) {
-    if( wager < 5000l )
+  public boolean isSignificantWager(BankAccount account, BigInteger wager) {
+    if( wager.compareTo(new BigInteger("5000")) < 0 )
       return false;
-    if( ((double)wager) / account.balance < 0.9 )
+    if( (new BigDecimal(wager)).divide(new BigDecimal(account.balance)).compareTo(new BigDecimal(0.9)) < 0 )
       return false;
     try {
       BankAccountDAO accountDAO = new BankAccountDAO(db);
-      if( ((double)wager) / accountDAO.getAccountTotal() < 0.4 )
+      if( (new BigDecimal(wager)).divide(new BigDecimal(accountDAO.getAccountTotal())).compareTo(new BigDecimal(0.4)) < 0 )
         return false;
     } catch( RecordFailure rf ) {
       rf.printStackTrace();
@@ -417,7 +426,7 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
 
   public TransferRecord doTransfer(GenericMessageEvent event, String[] arguments) {
     String destName = null;
-    long transferAmount = 0;
+    BigInteger transferAmount = new BigInteger("0");
     String sourceName = null;
     BankAccount source = null, dest = null;
     TransferRecord record = null;
@@ -425,9 +434,9 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       destName = arguments[0];
       String[] amountArgs = unprotectedCopyOfRange(arguments, 1,
               arguments.length);
-      BigInteger temp = ShortcutParser.parseValue(String.join(" ", amountArgs));
-      transferAmount = temp.longValue();
-      if( transferAmount == 0 ) {
+      transferAmount = ShortcutParser.parseValue(String.join(" ",
+              amountArgs));
+      if( transferAmount.compareTo(BigInteger.ZERO) == 0 ) {
         throw new ImproperBalanceAmount(transferAmount);
       }
       User user = event.getUser();
@@ -466,16 +475,15 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
 
 
   public SlotRecord doSlots(GenericMessageEvent event, String[] arguments) {
-    long wager = 0;
+    BigInteger wager = new BigInteger("0");
     String username = null;
     BankAccount acct = null;
     SlotRecord record = null;
     try {
       String[] wagerArgs = unprotectedCopyOfRange(arguments, 0,
               arguments.length);
-      BigInteger temp = ShortcutParser.parseValue(String.join(" ", wagerArgs));
-      wager = temp.longValue();
-      if( wager == 0 ) {
+      wager = ShortcutParser.parseValue(String.join(" ", wagerArgs));
+      if( wager.compareTo(BigInteger.ZERO) == 0 ) {
         throw new ImproperBalanceAmount(wager);
       }
       User user = event.getUser();
@@ -518,7 +526,7 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
 
 
   public HiLoRecord doHiLo(GenericMessageEvent event, String[] arguments) {
-    long wager = 0;
+    BigInteger wager = new BigInteger("0");
     HiLoBetType type = null;
     String username = null;
     BankAccount acct = null;
@@ -527,9 +535,8 @@ public class MoolahPlugin extends ListenerAdapter implements ListeningPlugin
       type = HiLoBetType.fromString(arguments[0]);
       String[] wagerArgs = unprotectedCopyOfRange(arguments, 1,
               arguments.length);
-      BigInteger temp = ShortcutParser.parseValue(String.join(" ", wagerArgs));
-      wager = temp.longValue();
-      if( wager == 0 ) {
+      wager = ShortcutParser.parseValue(String.join(" ", wagerArgs));
+      if( wager.compareTo(BigInteger.ZERO) == 0 ) {
         throw new ImproperBalanceAmount(wager);
       }
       User user = event.getUser();

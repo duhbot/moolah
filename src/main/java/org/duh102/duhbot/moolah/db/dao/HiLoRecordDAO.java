@@ -6,6 +6,7 @@ import org.duh102.duhbot.moolah.db.HiLoBetType;
 import org.duh102.duhbot.moolah.db.HiLoRecord;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
+import java.math.BigInteger;
 import java.sql.*;
 
 public class HiLoRecordDAO {
@@ -17,15 +18,18 @@ public class HiLoRecordDAO {
     public HiLoRecord recordHiLoRecord(HiLoRecord record) throws RecordFailure {
         return recordHiLoRecord(record.uid, record.resultInt, record.hiLo, record.wager, record.payout, record.multiplier, record.timestamp);
     }
-    public HiLoRecord recordHiLoRecord(long uid, int resultInt, HiLoBetType hiLo, long wager, long payout, double multiplier, Timestamp timestamp) throws RecordFailure {
+    public HiLoRecord recordHiLoRecord(long uid, int resultInt,
+                                       HiLoBetType hiLo, BigInteger wager,
+                                       BigInteger payout, double multiplier,
+                                       Timestamp timestamp) throws RecordFailure {
         Connection conn = database.getDBConnection();
         try {
             PreparedStatement stat = conn.prepareStatement("INSERT INTO hiLoOutcome (uid, resultInt, hiLo, wager, payout, payoutMul, timestamp) values (?, ?, ?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
             stat.setLong(1, uid);
             stat.setInt(2, resultInt);
             stat.setString(3, hiLo.toString());
-            stat.setLong(4, wager);
-            stat.setLong(5, payout);
+            stat.setString(4, wager.toString());
+            stat.setString(5, payout.toString());
             stat.setDouble(6, multiplier);
             stat.setString(7, LocalTimestamp.format(timestamp));
             stat.executeUpdate();

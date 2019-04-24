@@ -5,6 +5,7 @@ import org.duh102.duhbot.moolah.db.BankDB;
 import org.duh102.duhbot.moolah.db.TransferRecord;
 import org.duh102.duhbot.moolah.exceptions.RecordFailure;
 
+import java.math.BigInteger;
 import java.sql.*;
 
 public class TransferRecordDAO {
@@ -16,13 +17,15 @@ public class TransferRecordDAO {
     public TransferRecord recordTransfer(TransferRecord record) throws RecordFailure {
         return recordTransfer(record.uidSource, record.uidDestination, record.amount, record.timestamp);
     }
-    public TransferRecord recordTransfer(long uidSource, long uidDestination, long amount, Timestamp timestamp) throws RecordFailure {
+    public TransferRecord recordTransfer(long uidSource, long uidDestination,
+                                         BigInteger amount,
+                                         Timestamp timestamp) throws RecordFailure {
         Connection conn = database.getDBConnection();
         try {
             PreparedStatement stat = conn.prepareStatement("INSERT INTO transferRecord (uidSource, uidDest, amount, timestamp) values (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
             stat.setLong(1, uidSource);
             stat.setLong(2, uidDestination);
-            stat.setLong(3, amount);
+            stat.setString(3, amount.toString());
             stat.setString(4, LocalTimestamp.format(timestamp));
             stat.executeUpdate();
             ResultSet rs = stat.getGeneratedKeys();

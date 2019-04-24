@@ -1,6 +1,8 @@
 package org.duh102.duhbot.moolah.db;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.sql.*;
 import java.util.Random;
 
@@ -17,11 +19,13 @@ public class HiLoRecord {
   public long uid;
   public int resultInt;
   public HiLoBetType hiLo;
-  public long wager;
-  public long payout;
+  public BigInteger wager;
+  public BigInteger payout;
   public double multiplier;
   public Timestamp timestamp;
-  public HiLoRecord(long outcomeID, long uid, int resultInt, HiLoBetType hiLo, long wager, long payout, double multiplier, Timestamp timestamp) {
+  public HiLoRecord(long outcomeID, long uid, int resultInt, HiLoBetType hiLo,
+                    BigInteger wager, BigInteger payout, double multiplier,
+                    Timestamp timestamp) {
     this.outcomeID = outcomeID;
     this.uid = uid;
     this.resultInt = resultInt;
@@ -53,7 +57,9 @@ public class HiLoRecord {
     Timestamp timestamp = LocalTimestamp.now();
     int result = rand.nextInt(MAX-MIN)+MIN;
     double mult = Math.abs(hiLo.getSatisfied(result)?hiLo.getMultiplier():0.0);
-    long payout = Math.abs(Math.round(wager * mult));
+    BigInteger payout =
+            (new BigDecimal(mult)).multiply(new BigDecimal(wager)).round(MathContext.UNLIMITED).abs().toBigInteger();
+    //Math.abs(Math.round(wager * mult));
     try {
       account.addFunds(payout);
     } catch( ImproperBalanceAmount iba ) {
@@ -70,7 +76,8 @@ public class HiLoRecord {
     return multiplier >= HiLoBetType.EQUAL.getMultiplier();
   }
 
-  public static HiLoRecord recordBetHiLo(BankDB db, BankAccount account, HiLoBetType hiLo, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
+  public static HiLoRecord recordBetHiLo(BankDB db, BankAccount account,
+                                         HiLoBetType hiLo, BigInteger wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = new BankAccount(account);
       BankAccountDAO accountDAO = new BankAccountDAO(db);

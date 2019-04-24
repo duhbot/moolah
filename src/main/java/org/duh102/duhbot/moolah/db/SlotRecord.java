@@ -39,11 +39,13 @@ public class SlotRecord {
   public long outcomeID;
   public long uid;
   public SlotReelImage[] slotImages;
-  public long wager;
-  public long payout;
+  public BigInteger wager;
+  public BigInteger payout;
   public double multiplier;
   public Timestamp timestamp;
-  public SlotRecord(long outcomeID, long uid, SlotReelImage[] slotImages, long wager, long payout, double multiplier, Timestamp timestamp) {
+  public SlotRecord(long outcomeID, long uid, SlotReelImage[] slotImages,
+                    BigInteger wager, BigInteger payout, double multiplier,
+                    Timestamp timestamp) {
     this.outcomeID = outcomeID;
     this.uid = uid;
     this.slotImages = slotImages;
@@ -70,8 +72,9 @@ public class SlotRecord {
   }
   public boolean equals(SlotRecord other) {
     return this.outcomeID == other.outcomeID && this.uid == other.uid
-      && Arrays.equals(this.slotImages, other.slotImages) && this.wager == other.wager
-      && this.payout == other.payout && this.multiplier == other.multiplier
+      && Arrays.equals(this.slotImages, other.slotImages) && this.wager.equals(other.wager)
+      && this.payout.equals(other.payout) && String.format("%.2f",
+            this.multiplier).equals(String.format("%.2f", other.multiplier))
       && this.timestamp.equals(other.timestamp);
   }
 
@@ -95,7 +98,8 @@ public class SlotRecord {
     }
     return new SlotRecord(0l, account.uid, reels, wager, payout, multiplier, now);
   }
-  public static SlotRecord recordSlotAttempt(BankDB db, BankAccount account, long wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
+  public static SlotRecord recordSlotAttempt(BankDB db, BankAccount account,
+                                             BigInteger wager) throws InsufficientFundsException, ImproperBalanceAmount, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttempt = null;
       BankAccountDAO accountDAO = new BankAccountDAO(db);
@@ -122,7 +126,6 @@ public class SlotRecord {
 
   public static SlotReelImage[] getSlotImages() {
     SlotReelImage[] reelSet = new SlotReelImage[NUM_SLOTS];
-    StringBuilder slotBuilt = new StringBuilder();
     for( int i = 0; i < NUM_SLOTS; i++ ){
       reelSet[i] = choices[rand.nextInt(choices.length)];
     }

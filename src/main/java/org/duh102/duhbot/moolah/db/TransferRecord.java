@@ -1,5 +1,6 @@
 package org.duh102.duhbot.moolah.db;
 
+import java.math.BigInteger;
 import java.sql.*;
 
 import org.duh102.duhbot.moolah.BankAccount;
@@ -12,9 +13,10 @@ public class TransferRecord {
   public long outcomeID;
   public long uidSource;
   public long uidDestination;
-  public long amount;
+  public BigInteger amount;
   public Timestamp timestamp;
-  public TransferRecord(long outcomeID, long uidSource, long uidDestination, long amount, Timestamp timestamp) {
+  public TransferRecord(long outcomeID, long uidSource, long uidDestination,
+                        BigInteger amount, Timestamp timestamp) {
     this.outcomeID = outcomeID;
     this.uidSource = uidSource;
     this.uidDestination = uidDestination;
@@ -22,8 +24,10 @@ public class TransferRecord {
     this.timestamp = timestamp;
   }
 
-  public static TransferRecord makeTransfer(BankAccount source, BankAccount destination, long amount) throws InsufficientFundsException, ImproperBalanceAmount, SameAccountException {
-    if( source.balance < amount )
+  public static TransferRecord makeTransfer(BankAccount source,
+                                            BankAccount destination,
+                                            BigInteger amount) throws InsufficientFundsException, ImproperBalanceAmount, SameAccountException {
+    if( source.balance.compareTo(amount) < 0 )
       throw new InsufficientFundsException();
     if( source.equals(destination) || source.uid == destination.uid )
       throw new SameAccountException();
@@ -40,7 +44,9 @@ public class TransferRecord {
     }
     return new TransferRecord(0l, source.uid, destination.uid, amount, LocalTimestamp.now());
   }
-  public static TransferRecord recordTransfer(BankDB db, BankAccount source, BankAccount destination, long amount) throws InsufficientFundsException, ImproperBalanceAmount, SameAccountException, RecordFailure, AccountDoesNotExist {
+  public static TransferRecord recordTransfer(BankDB db, BankAccount source,
+                                              BankAccount destination,
+                                              BigInteger amount) throws InsufficientFundsException, ImproperBalanceAmount, SameAccountException, RecordFailure, AccountDoesNotExist {
     synchronized(db) {
       BankAccount preAttemptSource = null, preAttemptDest = null;
       try {
@@ -83,7 +89,7 @@ public class TransferRecord {
   }
   public boolean equals(TransferRecord other) {
     return this.outcomeID == other.outcomeID && this.uidSource == other.uidSource
-      && this.uidDestination == other.uidDestination && this.amount == other.amount
+      && this.uidDestination == other.uidDestination && this.amount.equals(other.amount)
       && this.timestamp.equals(other.timestamp);
   }
   public String toString() {
